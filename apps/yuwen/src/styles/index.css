@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  background: #FFFAF0;
+  color: #2D1B2E;
+}
+
+.pinyin-char {
+  font-family: 'Comic Sans MS', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+}
+
+.text-child    { font-size: 1.125rem; line-height: 1.7; }
+.text-child-lg { font-size: 1.5rem;   line-height: 1.6; }
+.text-child-xl { font-size: 2rem;     line-height: 1.4; }
+
+/* 卡通卡片：暖边 + 软阴影 + 大圆角 */
+.paper-card {
+  background: #ffffff;
+  border: 3px solid #FFE0E8;       /* pig-100 粉边 */
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 0 rgba(45, 27, 46, 0.04), 0 6px 18px rgba(45, 27, 46, 0.08);
+}
+
+/* 主按钮（佩奇粉） */
+.btn-pig {
+  background: #FF4781;
+  color: white;
+  border-radius: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #C42354, 0 8px 16px rgba(255, 71, 129, 0.25);
+  transition: transform 100ms, box-shadow 100ms;
+  letter-spacing: 0.02em;
+}
+.btn-pig:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #C42354, 0 2px 4px rgba(255, 71, 129, 0.25);
+}
+
+/* 蓝按钮 */
+.btn-sky {
+  background: #1E96F7;
+  color: white;
+  border-radius: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #0A5FA8, 0 8px 16px rgba(30, 150, 247, 0.25);
+  transition: transform 100ms, box-shadow 100ms;
+}
+.btn-sky:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0A5FA8, 0 2px 4px rgba(30, 150, 247, 0.25);
+}
+
+/* 黄按钮 */
+.btn-sun {
+  background: #FFCC00;
+  color: #2D1B2E;
+  border-radius: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #C79300, 0 8px 16px rgba(255, 204, 0, 0.25);
+  transition: transform 100ms, box-shadow 100ms;
+}
+.btn-sun:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #C79300, 0 2px 4px rgba(255, 204, 0, 0.25);
+}
+
+/* 触控目标 */
+button {
+  min-height: 44px;
+  min-width: 44px;
+  font-family: inherit;
+}
+
+/* 四线三格 */
+.grid-paper {
+  background-image:
+    linear-gradient(transparent 0, transparent 23%, #FFB7C9 23%, #FFB7C9 24%,
+    transparent 24%, transparent 48%, #FFB7C9 48%, #FFB7C9 49%,
+    transparent 49%, transparent 73%, #FFB7C9 73%, #FFB7C9 74%,
+    transparent 74%, transparent 100%);
+}
+
+.scroll-hide::-webkit-scrollbar { display: none; }
+.scroll-hide { scrollbar-width: none; }

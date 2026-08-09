@@ -1,0 +1,435 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>匹配 + 连播核对 - 切片工具</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; padding: 20px; max-width: 1400px; margin: 0 auto; background: #FFFAF0; }
+  h1 { color: #FF4781; text-align: center; margin-bottom: 8px; }
+  .hint { background: #fff3cd; padding: 15px; border-radius: 12px; margin: 16px 0; font-size: 14px; line-height: 1.7; }
+  .hint b { color: #d63384; }
+  .hint ol { margin: 6px 0; padding-left: 22px; }
+  .lesson { background: white; padding: 20px; border-radius: 16px; margin-top: 20px; }
+  .lesson h2 { color: #FF4781; margin: 0 0 12px; font-size: 22px; border-bottom: 2px dashed #FFD0E0; padding-bottom: 8px; }
+  .container { display: grid; grid-template-columns: 220px 1fr; gap: 24px; margin-top: 16px; }
+
+  /* 左边：拼音列表 */
+  .pinyin-panel { background: #FFF8F0; padding: 16px; border-radius: 14px; }
+  .pinyin-panel h2 { font-size: 16px; color: #333; margin: 0 0 10px; }
+  .pinyin-btn {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 5px 0;
+    font-size: 22px;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    background: white;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-align: left;
+    position: relative;
+  }
+  .pinyin-btn:hover { border-color: #FF4781; }
+  .pinyin-btn.selected { background: #FF4781; color: white; border-color: #FF4781; }
+  .pinyin-btn.matched { background: #4CAF50; color: white; border-color: #4CAF50; }
+  .pinyin-btn .cur { font-size: 11px; opacity: 0.7; margin-left: 6px; }
+  .pinyin-btn.matched .cur { opacity: 0.85; }
+  .clear-btn { background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; font-size: 14px; }
+
+  /* 右边：片段列表 */
+  .slices-panel { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; align-content: start; }
+  .slice-card {
+    background: white;
+    padding: 12px 8px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.1s;
+    position: relative;
+  }
+  .slice-card:hover { border-color: #FFCC00; }
+  .slice-card.selected { border-color: #FF4781; background: #FFF5F7; }
+  .slice-card.matched { border-color: #4CAF50; background: #E8F5E9; }
+  .slice-card.playing { background: #FF4781; color: white; border-color: #FF4781; }
+  .slice-card .slice-num { font-size: 22px; font-weight: bold; color: #FF4781; }
+  .slice-card.playing .slice-num { color: white; }
+  .slice-card .slice-label { font-size: 13px; color: #666; margin-top: 4px; min-height: 18px; font-weight: 600; }
+  .slice-card.matched .slice-label { color: #2e7d32; }
+  .slice-card .slice-cur { font-size: 10px; color: #c2185b; margin-top: 2px; opacity: 0.7; }
+  .slice-card.matched .slice-cur { display: none; }
+  .slice-card .slice-dur { font-size: 10px; color: #aaa; margin-top: 2px; }
+  .slice-card .play-icon { font-size: 16px; margin-top: 4px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar button { padding: 8px 14px; border-radius: 10px; border: 2px solid #FF4781; background: white; color: #FF4781; cursor: pointer; font-size: 13px; font-weight: bold; }
+  .toolbar button:hover { background: #FFF5F7; }
+  .toolbar button.primary { background: #FF4781; color: white; }
+  .toolbar .info { color: #888; font-size: 12px; }
+  .current-selection { text-align: center; font-size: 16px; margin: 10px 0; color: #FF4781; font-weight: bold; min-height: 24px; }
+
+  .export-btn {
+    display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
+    background: #4CAF50; color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 24px;
+  }
+  .export-btn:hover { background: #43a047; }
+  .output { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 12px; font-family: ui-monospace, monospace; white-space: pre-wrap; margin-top: 16px; display: none; max-height: 500px; overflow: auto; font-size: 12px; }
+
+  .summary { background: #FFF5F7; padding: 12px; border-radius: 10px; margin: 12px 0; font-size: 14px; }
+  .summary .row { display: flex; gap: 12px; align-items: center; padding: 4px 0; }
+  .summary .changed { color: #c62828; font-weight: bold; }
+  .summary .same { color: #2e7d32; }
+</style>
+</head>
+<body>
+<h1>🎵 切片核对 + 连播工具</h1>
+
+<div class="hint">
+  <b>两种用法：</b>
+  <ol>
+    <li><b>核对现有映射：</b> 切到一课后，每张 slice card 都已标好「当前 audioMap 写的拼音」。点 ▶ 听声音，发现不对的点右边的 ✏️ 改。</li>
+    <li><b>连播找错位：</b> 点顶部「▶ 连播」按钮，从头连续播放，听到目标拼音时点当前正在播的 card（标红时双击）配对。</li>
+  </ol>
+  改完点「📤 导出修正代码」复制给 AI。
+</div>
+
+<div style="text-align: center; margin: 16px 0;">
+  <select id="lessonSelect" style="padding: 10px 20px; font-size: 18px; border-radius: 10px; border: 2px solid #FF4781;">
+    <option value="L01">L01 - a o e</option>
+    <option value="L02">L02 - i u ü y w</option>
+    <option value="L03">L03 - b p m f</option>
+    <option value="L04" selected>L04 - d t n l</option>
+    <option value="L05">L05 - g k h</option>
+    <option value="L06">L06 - j q x</option>
+    <option value="L07">L07 - z c s + 整体认读</option>
+    <option value="L08">L08 - zh ch sh r + 整体认读</option>
+    <option value="L09">L09 - ai ei ui</option>
+    <option value="L10">L10 - ao ou iu</option>
+    <option value="L11">L11 - ie üe er</option>
+    <option value="L12">L12 - an en in un ün</option>
+    <option value="L13">L13 - ang eng ing ong</option>
+  </select>
+</div>
+
+<div class="toolbar">
+  <button class="primary" id="playAllBtn">▶ 连播（从头到尾）</button>
+  <button id="playFromBtn">▶ 从 #5 连播（跳过引导）</button>
+  <button id="stopBtn">■ 停止</button>
+  <span class="info" id="seqInfo"></span>
+</div>
+
+<div class="current-selection" id="currentSelection">选择拼音 + 点击/双击片段来配对</div>
+
+<div id="lessonContent"></div>
+
+<div class="summary" id="summary" style="display:none;"></div>
+
+<button class="export-btn" id="exportBtn">📤 导出修正代码</button>
+<pre class="output" id="output"></pre>
+
+<script>
+// ==================== audioMap 当前映射（从 src/audio/audioMap.ts 复制） ====================
+const CURRENT_MAP = {
+  L01: { 'ā':'/audio/slices/l01/slice_12.mp3','á':'/audio/slices/l01/slice_14.mp3','ǎ':'/audio/slices/l01/slice_16.mp3','à':'/audio/slices/l01/slice_18.mp3','ō':'/audio/slices/l01/slice_19.mp3','ó':'/audio/slices/l01/slice_21.mp3','ǒ':'/audio/slices/l01/slice_23.mp3','ò':'/audio/slices/l01/slice_25.mp3','ē':'/audio/slices/l01/slice_27.mp3','é':'/audio/slices/l01/slice_29.mp3','ě':'/audio/slices/l01/slice_31.mp3','è':'/audio/slices/l01/slice_33.mp3' },
+  L02: { 'ī':'/audio/slices/l02/slice_05.mp3','í':'/audio/slices/l02/slice_14.mp3','ǐ':'/audio/slices/l02/slice_16.mp3','ì':'/audio/slices/l02/slice_18.mp3','ū':'/audio/slices/l02/slice_20.mp3','ú':'/audio/slices/l02/slice_22.mp3','ǔ':'/audio/slices/l02/slice_24.mp3','ù':'/audio/slices/l02/slice_26.mp3','ǖ':'/audio/slices/l02/slice_28.mp3','ǘ':'/audio/slices/l02/slice_30.mp3','ǚ':'/audio/slices/l02/slice_32.mp3','ǜ':'/audio/slices/l02/slice_34.mp3','y':'/audio/slices/l02/slice_37.mp3','w':'/audio/slices/l02/slice_39.mp3','yi':'/audio/slices/l02/slice_38.mp3','wu':'/audio/slices/l02/slice_40.mp3','yu':'/audio/slices/l02/slice_41.mp3' },
+  L03: { 'b':'/audio/slices/l03/slice_05.mp3','p':'/audio/slices/l03/slice_13.mp3','m':'/audio/slices/l03/slice_15.mp3','f':'/audio/slices/l03/slice_17.mp3' },
+  L04: { 'd':'/audio/slices/l04/slice_05.mp3','t':'/audio/slices/l04/slice_06.mp3','n':'/audio/slices/l04/slice_08.mp3','l':'/audio/slices/l04/slice_18.mp3' },
+  L05: { 'g':'/audio/slices/l05/slice_11.mp3','k':'/audio/slices/l05/slice_12.mp3','h':'/audio/slices/l05/slice_13.mp3' },
+  L06: { 'j':'/audio/slices/l06/slice_05.mp3','q':'/audio/slices/l06/slice_06.mp3','x':'/audio/slices/l06/slice_07.mp3' },
+  L07: { 'z':'/audio/slices/l07/slice_05.mp3','c':'/audio/slices/l07/slice_06.mp3','s':'/audio/slices/l07/slice_07.mp3','zi':'/audio/slices/l07/slice_18.mp3','ci':'/audio/slices/l07/slice_19.mp3','si':'/audio/slices/l07/slice_21.mp3' },
+  L08: { 'zh':'/audio/slices/l08/slice_05.mp3','ch':'/audio/slices/l08/slice_06.mp3','sh':'/audio/slices/l08/slice_07.mp3','r':'/audio/slices/l08/slice_20.mp3','zhi':'/audio/slices/l08/slice_21.mp3','chi':'/audio/slices/l08/slice_22.mp3','shi':'/audio/slices/l08/slice_24.mp3','ri':'/audio/slices/l08/slice_26.mp3' },
+  L09: { 'ai':'/audio/slices/l09/slice_05.mp3','ei':'/audio/slices/l09/slice_06.mp3','ui':'/audio/slices/l09/slice_07.mp3' },
+  L10: { 'ao':'/audio/slices/l10/slice_05.mp3','ou':'/audio/slices/l10/slice_06.mp3','iu':'/audio/slices/l10/slice_07.mp3' },
+  L11: { 'ie':'/audio/slices/l11/slice_05.mp3','üe':'/audio/slices/l11/slice_06.mp3','er':'/audio/slices/l11/slice_07.mp3' },
+  L12: { 'an':'/audio/slices/l12/slice_05.mp3','en':'/audio/slices/l12/slice_06.mp3','in':'/audio/slices/l12/slice_07.mp3','un':'/audio/slices/l12/slice_08.mp3','ün':'/audio/slices/l12/slice_09.mp3' },
+  L13: { 'ang':'/audio/slices/l13/slice_05.mp3','eng':'/audio/slices/l13/slice_06.mp3','ing':'/audio/slices/l13/slice_07.mp3','ong':'/audio/slices/l13/slice_08.mp3' },
+}
+
+const LESSON_PINYINS = {
+  L01: ['ā','á','ǎ','à','ō','ó','ǒ','ò','ē','é','ě','è'],
+  L02: ['ī','í','ǐ','ì','ū','ú','ǔ','ù','ǖ','ǘ','ǚ','ǜ','y','w','yi','wu','yu'],
+  L03: ['b','p','m','f'],
+  L04: ['d','t','n','l'],
+  L05: ['g','k','h'],
+  L06: ['j','q','x'],
+  L07: ['z','c','s','zi','ci','si'],
+  L08: ['zh','ch','sh','r','zhi','chi','shi','ri'],
+  L09: ['ai','ei','ui'],
+  L10: ['ao','ou','iu'],
+  L11: ['ie','üe','er'],
+  L12: ['an','en','in','un','ün'],
+  L13: ['ang','eng','ing','ong'],
+}
+
+// 每课「引导片段」通常是前 4 个（老师说"请跟我读"那种），从 5 开始是本体
+const LESSON_BODY_START = {
+  L01: 5, L02: 5, L03: 5, L04: 5, L05: 5, L06: 5, L07: 5, L08: 5,
+  L09: 5, L10: 5, L11: 4, L12: 3, L13: 4,
+}
+
+const LESSON_TOTAL_SLICES = {
+  L01: 35, L02: 43, L03: 24, L04: 24, L05: 21, L06: 21, L07: 30,
+  L08: 33, L09: 25, L10: 25, L11: 26, L12: 38, L13: 29,
+}
+
+// 时长（秒，精确到 0.01）
+const DURATIONS = {
+  l01: {5:0.94,6:1.20,7:1.20,8:1.20,9:1.20,10:1.20,11:1.20,12:0.39,13:1.20,14:0.50,15:1.20,16:0.55,17:1.20,18:0.42,19:0.45,20:1.20,21:0.50,22:1.20,23:0.55,24:1.20,25:0.50,26:1.20,27:0.42,28:1.20,29:0.50,30:1.20,31:0.55,32:1.20,33:0.45},
+  l02: {5:0.39,14:0.50,16:0.50,18:0.42,20:0.50,22:0.50,24:0.50,26:0.50,28:0.50,30:0.50,32:0.55,34:0.50,37:0.55,38:0.55,39:0.42,40:0.55,41:0.55},
+  l03: {5:0.42,13:0.50,15:0.55,17:0.50},
+  l04: {5:0.34,6:0.44,7:0.44,8:0.44,9:1.10,10:0.65,11:0.37,12:0.39,13:0.44,14:0.47,15:0.55,16:0.55,17:0.50,18:0.50,19:1.07,20:0.76,21:0.71,22:0.89,23:0.91,24:0.86},
+  l05: {4:0.84,5:0.39,6:0.47,7:0.55,8:1.02,9:0.71,10:0.37,11:0.44,12:0.47,13:0.47,14:0.52,15:0.55,16:1.07,17:0.76,18:0.73,19:0.91,20:0.91,21:0.89},
+  l06: {5:0.39,6:0.47,7:0.42,8:0.99,9:0.55,10:0.47,11:0.52,12:0.52,13:0.55,14:0.47,15:0.47,16:1.57,17:0.50,18:0.47,19:0.52,20:0.47,21:1.04},
+  l07: {5:0.39,6:0.50,7:0.42,18:0.55,19:0.55,21:0.55},
+  l08: {5:0.39,6:0.50,7:0.42,20:0.50,21:0.55,22:0.55,24:0.55,26:0.55},
+  l09: {5:0.39,6:0.50,7:0.42},
+  l10: {5:0.42,6:0.47,7:0.55,8:1.04,9:0.57,10:0.44,11:0.47,12:0.52,13:0.55,14:0.73,15:0.73,16:1.07,17:1.02,18:1.12,19:1.02,20:0.94,21:1.04,22:1.02,23:0.97,24:0.91,25:0.99},
+  l11: {4:1.18,5:0.44,6:0.50,7:0.42,8:0.99,9:0.55,10:0.47,11:0.52,12:0.52,13:0.55,14:0.47,15:0.47,16:1.57,17:0.50,18:0.47,19:0.52,20:0.47,21:1.04,22:0.68,23:0.71,24:0.89,25:0.86,26:0.91},
+  l12: {3:0.68,4:1.12,5:0.42,6:0.47,7:0.50,8:0.50,9:0.50,10:1.02,11:0.55,12:0.42,13:0.44,14:0.47,15:0.47,16:0.52,17:0.73,18:0.55,19:0.55,20:0.63,21:0.65,22:1.52,23:0.55,24:0.60,25:0.55,26:0.63,27:0.68,28:0.71,29:1.02,30:0.97,31:0.97,32:0.81,33:0.86,34:0.94,35:0.97,36:0.97,37:0.97,38:0.91},
+  l13: {4:1.23,5:0.42,6:0.44,7:0.50,8:0.42,9:1.02,10:0.55,11:0.44,12:0.47,13:0.42,14:0.42,15:0.52,16:0.60,17:0.47,18:0.47,19:1.62,20:0.57,21:0.55,22:1.10,23:0.99,24:0.91,25:1.46,26:1.46,27:1.46,28:1.41,29:0.97},
+}
+
+let currentLesson = 'L04'
+let selectedPinyin = null
+let audio = null
+let seqQueue = []     // 连播队列 [{file, sliceIdx}]
+let seqIdx = 0
+let playingCell = null
+
+// 用户修正：{ L04: { d: 5, n: 9 }, L05: { g: 6 } }  (sliceIdx)
+const corrections = {}
+
+function fileToIdx(file) {
+  // l04/slice_05.mp3 -> 5
+  const m = file.match(/slice_(\d+)\.mp3$/)
+  return m ? parseInt(m[1]) : null
+}
+
+function idxToFile(prefix, idx) {
+  return `${prefix}/slice_${String(idx).padStart(2, '0')}.mp3`
+}
+
+function stopAll() {
+  if (audio) { audio.pause(); audio = null }
+  if (playingCell) { playingCell.classList.remove('playing'); playingCell = null }
+  seqQueue = []
+  document.getElementById('seqInfo').textContent = ''
+}
+
+function playOne(file, cellEl) {
+  stopAll()
+  audio = new Audio(`/audio/slices/${file}`)
+  audio.play()
+  if (cellEl) {
+    cellEl.classList.add('playing')
+    playingCell = cellEl
+  }
+  audio.onended = () => {
+    if (cellEl) cellEl.classList.remove('playing')
+    playingCell = null
+    if (seqQueue.length > 0) {
+      seqIdx++
+      if (seqIdx < seqQueue.length) {
+        const next = seqQueue[seqIdx]
+        playOne(next.file, next.cell)
+      } else {
+        stopAll()
+        document.getElementById('seqInfo').textContent = '连播结束'
+      }
+    }
+  }
+}
+
+function startSequence(from, to) {
+  const prefix = currentLesson.replace('L', 'l')
+  const curMap = CURRENT_MAP[currentLesson] || {}
+  // 当前修正后映射（用于显示）
+  const newMap = { ...Object.fromEntries(Object.entries(curMap).map(([k, v]) => [k, fileToIdx(v)])), ...(corrections[currentLesson] || {}) }
+
+  stopAll()
+  seqQueue = []
+  for (let i = from; i <= to; i++) {
+    const cell = document.getElementById(`slice-${i}`)
+    if (cell) seqQueue.push({ file: idxToFile(prefix, i), cell })
+  }
+  if (seqQueue.length === 0) return
+  seqIdx = 0
+  document.getElementById('seqInfo').textContent = `连播中 #${from} → #${to}（${seqQueue.length} 个）`
+  document.getElementById('currentSelection').textContent = `▶ 连播中：听到目标拼音时，<b>双击</b>当前高亮（粉色）的卡片来配对`
+  playOne(seqQueue[0].file, seqQueue[0].cell)
+}
+
+function clickSlice(i) {
+  const cell = document.getElementById(`slice-${i}`)
+  const prefix = currentLesson.replace('L', 'l')
+  if (playingCell === cell) {
+    // 双击场景：当前正在播这个 → 触发配对
+    matchSlice(i)
+  } else {
+    playOne(idxToFile(prefix, i), cell)
+    if (selectedPinyin) {
+      document.getElementById('currentSelection').innerHTML = `正在听 #${i} | 已选 <b>${selectedPinyin}</b> → <b>再次点击这个卡片</b>确认配对 ✅`
+    } else {
+      document.getElementById('currentSelection').innerHTML = `正在听 #${i} | 请先在左边选一个拼音`
+    }
+  }
+}
+
+function matchSlice(sliceIdx) {
+  if (!selectedPinyin) {
+    alert('请先在左边选一个拼音！')
+    return
+  }
+  if (!corrections[currentLesson]) corrections[currentLesson] = {}
+  // 解除旧的（同一拼音之前绑定的 slice）
+  for (const k of Object.keys(corrections[currentLesson])) {
+    if (k === selectedPinyin) delete corrections[currentLesson][k]
+  }
+  // 解除旧的（同一 slice 之前绑定的拼音）
+  for (const k of Object.keys(corrections[currentLesson])) {
+    if (corrections[currentLesson][k] === sliceIdx) delete corrections[currentLesson][k]
+  }
+  corrections[currentLesson][selectedPinyin] = sliceIdx
+  selectedPinyin = null
+  stopAll()
+  render()
+}
+
+function selectPinyin(p) {
+  selectedPinyin = p
+  render()
+}
+
+function clearLesson() {
+  corrections[currentLesson] = {}
+  selectedPinyin = null
+  render()
+}
+
+function render() {
+  const content = document.getElementById('lessonContent')
+  const cur = CURRENT_MAP[currentLesson] || {}
+  const pinyins = LESSON_PINYINS[currentLesson] || []
+  const newMap = corrections[currentLesson] || {}
+  // 当前映射的 sliceIdx
+  const curIdx = {}
+  for (const [p, f] of Object.entries(cur)) curIdx[p] = fileToIdx(f)
+
+  let html = `<div class="lesson">`
+  // 左边拼音列表面板
+  html += `<div class="container">`
+  html += `<div class="pinyin-panel"><h2>📝 选拼音</h2>`
+  for (const p of pinyins) {
+    const matchedSlice = newMap[p] || curIdx[p]
+    const isMatched = !!newMap[p]
+    const isSelected = selectedPinyin === p
+    const orig = curIdx[p]
+    const new_ = newMap[p]
+    let label = ''
+    if (isMatched && new_ !== orig) label = `<span class="cur">改: #${orig}→#${new_}</span>`
+    else if (isMatched) label = `<span class="cur">#${new_}</span>`
+    else label = `<span class="cur">#${orig}</span>`
+    html += `<button class="pinyin-btn ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''}" onclick="selectPinyin('${p}')">${p} ${label}</button>`
+  }
+  html += `<button class="clear-btn" onclick="clearLesson()">🔄 清空本课修正</button></div>`
+
+  // 右边切片网格
+  const total = LESSON_TOTAL_SLICES[currentLesson] || 40
+  const prefix = currentLesson.replace('L', 'l')
+  html += `<div class="slices-panel">`
+  for (let i = 1; i <= total; i++) {
+    const matchedPinyin = Object.keys(newMap).find(k => newMap[k] === i) || Object.keys(curIdx).find(k => curIdx[k] === i)
+    const isMatched = Object.keys(newMap).includes(matchedPinyin)
+    const dur = DURATIONS[prefix]?.[i]
+    const durStr = dur ? dur.toFixed(2) + 's' : ''
+    html += `<div class="slice-card ${isMatched ? 'matched' : ''}" id="slice-${i}" onclick="clickSlice(${i})">
+      <div class="slice-num">#${i}</div>
+      <div class="slice-label">${matchedPinyin || '...'}</div>
+      ${!isMatched && matchedPinyin ? `<div class="slice-cur">原: ${matchedPinyin}</div>` : ''}
+      ${durStr ? `<div class="slice-dur">${durStr}</div>` : ''}
+      <div class="play-icon">🔊</div>
+    </div>`
+  }
+  html += `</div></div>`
+
+  // 总结：与原映射的对比
+  if (Object.keys(newMap).length > 0) {
+    html += `<div class="summary"><b>📊 本课与原映射对比：</b>`
+    for (const p of pinyins) {
+      const orig = curIdx[p]
+      const new_ = newMap[p] || orig
+      const changed = new_ !== orig
+      html += `<div class="row"><span class="${changed ? 'changed' : 'same'}">${changed ? '⚠️' : '✅'} ${p}</span>: 原 slice_${String(orig).padStart(2,'0')}${changed ? ` → 新 slice_${String(new_).padStart(2,'0')}` : '（未变）'}</div>`
+    }
+    html += `</div>`
+  }
+
+  html += `</div>`  // .lesson
+  content.innerHTML = html
+
+  document.getElementById('currentSelection').textContent = selectedPinyin
+    ? `已选 ${selectedPinyin} → 点击卡片听音，再次点击同一张确认配对`
+    : '选择左边一个拼音，然后点击右边的卡片听音配对'
+}
+
+function exportCode() {
+  const out = document.getElementById('output')
+  out.style.display = 'block'
+  const lines = ['// audioMap.ts 修正后的切片映射', `// 生成时间：${new Date().toLocaleString()}`, '']
+  let totalChanges = 0
+  for (const [lesson, fix] of Object.entries(corrections)) {
+    if (Object.keys(fix).length === 0) continue
+    const cur = CURRENT_MAP[lesson] || {}
+    const num = lesson.replace('L', '')
+    lines.push(`// ${lesson}: ${Object.keys(fix).length} 处修正`)
+    // 完整输出该课的所有条目（已修正的）
+    const pinyins = LESSON_PINYINS[lesson] || []
+    const newEntries = []
+    for (const p of pinyins) {
+      const origIdx = fileToIdx(cur[p])
+      const newIdx = fix[p] || origIdx
+      const file = `/audio/slices/l${num}/slice_${String(newIdx).padStart(2,'0')}.mp3`
+      const mark = fix[p] && fix[p] !== origIdx ? '  // ⚠️ 修正：原 slice_' + String(origIdx).padStart(2,'0') : ''
+      newEntries.push(`  { pinyin: '${p}', file: '${file}', note: '' }${mark}`)
+      if (fix[p] && fix[p] !== origIdx) totalChanges++
+    }
+    lines.push(`export const ${lesson}_AUDIO: AudioSlice[] = [`)
+    lines.push(newEntries.join(',\n'))
+    lines.push(`]`)
+    lines.push('')
+  }
+  if (totalChanges === 0) {
+    lines.push('// （无任何修正）')
+  } else {
+    lines.unshift(`// 共 ${totalChanges} 处修正`)
+  }
+  out.textContent = lines.join('\n')
+  // 自动选中
+  const range = document.createRange()
+  range.selectNodeContents(out)
+  const sel = window.getSelection()
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
+// 事件绑定
+document.getElementById('lessonSelect').onchange = (e) => {
+  currentLesson = e.target.value
+  selectedPinyin = null
+  stopAll()
+  render()
+}
+document.getElementById('playAllBtn').onclick = () => {
+  startSequence(1, LESSON_TOTAL_SLICES[currentLesson] || 40)
+}
+document.getElementById('playFromBtn').onclick = () => {
+  startSequence(LESSON_BODY_START[currentLesson] || 5, Math.min((LESSON_BODY_START[currentLesson] || 5) + 10, LESSON_TOTAL_SLICES[currentLesson] || 40))
+}
+document.getElementById('stopBtn').onclick = stopAll
+document.getElementById('exportBtn').onclick = exportCode
+
+render()
+</script>
+</body>
+</html>

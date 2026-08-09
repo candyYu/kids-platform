@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>邻近切片试听 - L04/L05/L10/L11/L12/L13</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; padding: 20px; max-width: 1400px; margin: 0 auto; background: #FFFAF0; }
+  h1 { color: #FF4781; text-align: center; margin-bottom: 8px; }
+  .tip { background: #fff3cd; padding: 12px 16px; border-radius: 10px; margin: 12px 0; font-size: 14px; line-height: 1.7; }
+  .tip b { color: #d63384; }
+  .tip code { background: #fff; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  .lesson { background: white; border-radius: 14px; padding: 18px 22px; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .lesson h2 { color: #FF4781; margin: 0 0 8px; font-size: 22px; border-bottom: 2px dashed #FFD0E0; padding-bottom: 8px; }
+  .lesson p.expected { background: #FFF5F7; padding: 8px 12px; border-radius: 8px; margin: 8px 0 14px; font-size: 14px; color: #c2185b; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin: 8px 0 14px; flex-wrap: wrap; }
+  .toolbar button {
+    padding: 8px 14px; border-radius: 10px; border: 2px solid #FF4781; background: white;
+    color: #FF4781; cursor: pointer; font-size: 14px; font-weight: bold;
+  }
+  .toolbar button:hover { background: #FFF5F7; }
+  .toolbar button.primary { background: #FF4781; color: white; }
+  .toolbar input[type=range] { width: 180px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .cell {
+    background: #fafafa; border: 2px solid transparent; border-radius: 10px; padding: 12px 8px;
+    text-align: center; cursor: pointer; transition: all 0.1s;
+  }
+  .cell:hover { border-color: #FFCC00; }
+  .cell.playing { background: #4CAF50; color: white; border-color: #4CAF50; }
+  .cell .num { font-size: 18px; font-weight: bold; color: #FF4781; }
+  .cell.playing .num { color: white; }
+  .cell .dur { font-size: 11px; color: #999; margin-top: 4px; }
+  .cell.playing .dur { color: rgba(255,255,255,0.85); }
+  .form {
+    margin-top: 12px; padding: 12px; background: #f9f9f9; border-radius: 10px;
+    font-size: 14px;
+  }
+  .form label { display: inline-block; margin: 4px 12px 4px 0; }
+  .form input[type=text] { padding: 4px 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; width: 80px; }
+  .form .correct { color: #2e7d32; font-weight: bold; }
+  .export { margin-top: 12px; padding: 10px 14px; background: #4CAF50; color: white;
+            border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
+  pre.output { background: #1e1e1e; color: #d4d4d4; padding: 14px; border-radius: 8px;
+               max-height: 400px; overflow: auto; font-size: 12px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+<h1>🔍 邻近切片试听 - L04/L05/L10/L11/L12/L13</h1>
+<div class="tip">
+  <b>用法：</b> 每行按 slice 编号顺序排列，点「▶ 连播本课」按钮可从头连着听。<br>
+  听到对应拼音的切片时，在下方「纠正映射」里填上：<code>L0X:拼音=slice编号</code>，再点「生成修正代码」复制给 AI。<br>
+  <b>操作建议：</b>
+  <ol style="margin: 6px 0; padding-left: 20px;">
+    <li>点「▶ 连播本课」从头听到尾</li>
+    <li>每听到一个目标拼音，<b>立刻点</b>当前播放的 cell（标记为听到的位置）</li>
+    <li>弹出的输入框填拼音字母（不含声调），回车确认</li>
+    <li>全部听完点「生成修正代码」</li>
+  </ol>
+</div>
+
+<div id="root"></div>
+
+<script>
+// 配置：每课从第几个 slice 开始（跳过前导"跟我读"引导段）
+// L04~L13 这几课：前 4 个通常是引导语/示例词，从 5 开始听本体
+const LESSONS = [
+  { id: 'L04', filePrefix: 'l04', pinyins: ['d','t','n','l'], startAt: 5, endAt: 13, currentMap: { d: 5, t: 6, n: 8, l: 10 }, issue: 'n 和 l 不对' },
+  { id: 'L05', filePrefix: 'l05', pinyins: ['g','k','h'], startAt: 5, endAt: 13, currentMap: { g: 4, k: 6, h: 8 }, issue: '三个都不对' },
+  { id: 'L10', filePrefix: 'l10', pinyins: ['ao','ou','iu'], startAt: 5, endAt: 12, currentMap: { ao: 6, ou: 7, iu: 8 }, issue: 'ao 播的是 ou，ou 播的是 iu' },
+  { id: 'L11', filePrefix: 'l11', pinyins: ['ie','üe','er'], startAt: 4, endAt: 11, currentMap: { ie: 4, üe: 5, er: 6 }, issue: '错位一点点' },
+  { id: 'L12', filePrefix: 'l12', pinyins: ['an','en','in','un','ün'], startAt: 3, endAt: 11, currentMap: { an: 3, en: 4, in: 5, un: 6, ün: 7 }, issue: '错位' },
+  { id: 'L13', filePrefix: 'l13', pinyins: ['ang','eng','ing','ong'], startAt: 4, endAt: 12, currentMap: { ang: 4, eng: 5, ing: 6, ong: 7 }, issue: '错位' },
+]
+
+// 时长数据（从 ffprobe 拿的，启动时填进来）
+const DURATIONS = {
+  l04: { 1: 0.78, 2: 1.31, 3: 0.65, 4: 1.04, 5: 0.34, 6: 0.44, 7: 0.44, 8: 0.44, 9: 1.10, 10: 0.65, 11: 0.37, 12: 0.39, 13: 0.44, 14: 0.47, 15: 0.55, 16: 0.55, 17: 0.50, 18: 0.50, 19: 1.07, 20: 0.76, 21: 0.71, 22: 0.89, 23: 0.91, 24: 0.86 },
+  l05: { 1: 0.81, 2: 1.28, 3: 0.71, 4: 0.84, 5: 0.39, 6: 0.47, 7: 0.55, 8: 1.02, 9: 0.71, 10: 0.37, 11: 0.44, 12: 0.47, 13: 0.47, 14: 0.52, 15: 0.55, 16: 1.07, 17: 0.76, 18: 0.73, 19: 0.91, 20: 0.91, 21: 0.89 },
+  l10: { 1: 0.76, 2: 1.28, 3: 0.78, 4: 1.07, 5: 0.42, 6: 0.47, 7: 0.55, 8: 1.04, 9: 0.57, 10: 0.44, 11: 0.47, 12: 0.52, 13: 0.55, 14: 0.73, 15: 0.73, 16: 1.07, 17: 1.02, 18: 1.12, 19: 1.02, 20: 0.94, 21: 1.04, 22: 1.02, 23: 0.97, 24: 0.91, 25: 0.99 },
+  l11: { 1: 0.84, 2: 1.31, 3: 0.71, 4: 1.18, 5: 0.44, 6: 0.50, 7: 0.42, 8: 0.99, 9: 0.55, 10: 0.47, 11: 0.52, 12: 0.52, 13: 0.55, 14: 0.47, 15: 0.47, 16: 1.57, 17: 0.50, 18: 0.47, 19: 0.52, 20: 0.47, 21: 1.04, 22: 0.68, 23: 0.71, 24: 0.89, 25: 0.86, 26: 0.91 },
+  l12: { 1: 0.73, 2: 1.28, 3: 0.68, 4: 1.12, 5: 0.42, 6: 0.47, 7: 0.50, 8: 0.50, 9: 0.50, 10: 1.02, 11: 0.55, 12: 0.42, 13: 0.44, 14: 0.47, 15: 0.47, 16: 0.52, 17: 0.73, 18: 0.55, 19: 0.55, 20: 0.63, 21: 0.65, 22: 1.52, 23: 0.55, 24: 0.60, 25: 0.55, 26: 0.63, 27: 0.68, 28: 0.71, 29: 1.02, 30: 0.97, 31: 0.97, 32: 0.81, 33: 0.86, 34: 0.94, 35: 0.97, 36: 0.97, 37: 0.97, 38: 0.91 },
+  l13: { 1: 0.71, 2: 1.23, 3: 0.68, 4: 1.23, 5: 0.42, 6: 0.44, 7: 0.50, 8: 0.42, 9: 1.02, 10: 0.55, 11: 0.44, 12: 0.47, 13: 0.42, 14: 0.42, 15: 0.52, 16: 0.60, 17: 0.47, 18: 0.47, 19: 1.62, 20: 0.57, 21: 0.55, 22: 1.10, 23: 0.99, 24: 0.91, 25: 1.46, 26: 1.46, 27: 1.46, 28: 1.41, 29: 0.97 },
+}
+
+let audio = null
+let currentCell = null
+let currentLessonId = null
+let currentSeq = null   // 连播队列 {file, idx}[]
+let seqIdx = 0
+
+// corrections: { L04: { d: 5, t: 6, n: 9, l: 11 }, ... }
+const corrections = {}
+
+function playFile(file, cell) {
+  stopAll()
+  audio = new Audio(`/audio/slices/${file}`)
+  audio.play()
+  if (cell) {
+    cell.classList.add('playing')
+    currentCell = cell
+  }
+  audio.onended = () => {
+    if (cell) cell.classList.remove('playing')
+    if (currentSeq && seqIdx < currentSeq.length - 1) {
+      seqIdx++
+      playFile(currentSeq[seqIdx].file, currentSeq[seqIdx].cell)
+    } else {
+      currentSeq = null
+      currentCell = null
+    }
+  }
+}
+
+function stopAll() {
+  if (audio) { audio.pause(); audio = null }
+  if (currentCell) { currentCell.classList.remove('playing'); currentCell = null }
+  currentSeq = null
+}
+
+function playSequence(prefix, from, to, cells) {
+  stopAll()
+  currentSeq = []
+  for (let i = from; i <= to; i++) {
+    const file = `${prefix}/slice_${String(i).padStart(2, '0')}.mp3`
+    currentSeq.push({ file, cell: cells[i] })
+  }
+  seqIdx = 0
+  playFile(currentSeq[0].file, currentSeq[0].cell)
+}
+
+function markHeard(lessonId, sliceIdx) {
+  const input = prompt(`听到 slice_${String(sliceIdx).padStart(2, '0')} 是哪个拼音？\n（填拼音字母，不带声调。如 d / t / n / l / ao / ou / iu）`, '')
+  if (!input) return
+  const pinyin = input.trim()
+  if (!corrections[lessonId]) corrections[lessonId] = {}
+  // 解除其他 slice 占用的同一拼音
+  for (const k of Object.keys(corrections[lessonId])) {
+    if (corrections[lessonId][k] === sliceIdx) {
+      delete corrections[lessonId][k]
+    }
+  }
+  corrections[lessonId][pinyin] = sliceIdx
+  render()
+}
+
+function clearCorrection(lessonId, pinyin) {
+  if (corrections[lessonId]) delete corrections[lessonId][pinyin]
+  render()
+}
+
+function render() {
+  const root = document.getElementById('root')
+  let html = ''
+  for (const L of LESSONS) {
+    html += `<div class="lesson"><h2>${L.id} <span style="font-weight:400;font-size:14px;color:#888;">${L.issue}</span></h2>`
+    html += `<p class="expected">当前映射：${L.pinyins.map(p => `<b>${p}</b>→slice_${String(L.currentMap[p]).padStart(2,'0')}`).join('，')}（你说这几个都不对）</p>`
+    html += `<div class="toolbar">
+      <button class="primary" onclick="playLesson('${L.id}')">▶ 连播本课 (slice_${String(L.startAt).padStart(2,'0')} → slice_${String(L.endAt).padStart(2,'0')})</button>
+      <button onclick="stopAll()">■ 停止</button>
+      <span style="color:#888;font-size:13px;">听到目标拼音时，<b>点击</b>当前播放的 cell → 弹窗填拼音</span>
+    </div>`
+    html += `<div class="grid" id="grid-${L.id}">`
+    for (let i = L.startAt; i <= L.endAt; i++) {
+      const dur = DURATIONS[L.filePrefix]?.[i] || 0
+      // 高亮：当前已匹配 / 已被纠正
+      const curMatch = Object.entries(L.currentMap).find(([k, v]) => v === i)?.[0]
+      const newMatch = corrections[L.id] && Object.entries(corrections[L.id]).find(([k, v]) => v === i)?.[0]
+      let badge = ''
+      if (newMatch) badge = `<div class="dur" style="color:#2e7d32;font-weight:bold;">✓ ${newMatch}</div>`
+      else if (curMatch) badge = `<div class="dur" style="color:#c2185b;">原: ${curMatch}</div>`
+      else badge = `<div class="dur">${dur.toFixed(2)}s</div>`
+      html += `<div class="cell" id="cell-${L.id}-${i}" onclick="clickCell('${L.id}', ${i})">
+        <div class="num">${i}</div>
+        ${badge}
+      </div>`
+    }
+    html += `</div>`
+    // 纠正结果
+    if (corrections[L.id] && Object.keys(corrections[L.id]).length > 0) {
+      html += `<div class="form">
+        <b>${L.id} 纠正结果：</b>
+        ${Object.entries(corrections[L.id]).map(([p, i]) =>
+          `<label>${p} → slice_${String(i).padStart(2,'0')} <button onclick="clearCorrection('${L.id}','${p}')" style="background:none;border:none;color:#999;cursor:pointer;">✕</button></label>`
+        ).join('')}
+      </div>`
+    }
+    html += `</div>`
+  }
+  html += `<div style="text-align:center;margin:30px 0;">
+    <button class="export" onclick="exportAll()">📤 生成修正代码（复制给 AI）</button>
+  </div>`
+  html += `<pre class="output" id="output"></pre>`
+  root.innerHTML = html
+}
+
+function clickCell(lessonId, sliceIdx) {
+  const cell = document.getElementById(`cell-${lessonId}-${sliceIdx}`)
+  // 如果是连播中的当前 cell，则标记
+  if (currentCell === cell) {
+    markHeard(lessonId, sliceIdx)
+  } else {
+    // 单击播放
+    const L = LESSONS.find(x => x.id === lessonId)
+    playFile(`${L.filePrefix}/slice_${String(sliceIdx).padStart(2,'0')}.mp3`, cell)
+  }
+}
+
+function playLesson(lessonId) {
+  const L = LESSONS.find(x => x.id === lessonId)
+  const cells = {}
+  for (let i = L.startAt; i <= L.endAt; i++) {
+    cells[i] = document.getElementById(`cell-${lessonId}-${i}`)
+  }
+  playSequence(L.filePrefix, L.startAt, L.endAt, cells)
+}
+
+function exportAll() {
+  const out = document.getElementById('output')
+  out.style.display = 'block'
+  let lines = ['// 音频切片修正映射（从 verify-nearby.html 收集）', '']
+  for (const L of LESSONS) {
+    if (!corrections[L.id] || Object.keys(corrections[L.id]).length === 0) continue
+    lines.push(`${L.id} (${L.issue}):`)
+    // 按 slice 顺序输出
+    const arr = Object.entries(corrections[L.id]).sort((a, b) => a[1] - b[1])
+    for (const [p, i] of arr) {
+      lines.push(`  ${p} = slice_${String(i).padStart(2, '0')}  (原映射 = slice_${String(L.currentMap[p]).padStart(2,'0')})`)
+    }
+    lines.push('')
+  }
+  out.textContent = lines.join('\n')
+  // 自动选中
+  const range = document.createRange()
+  range.selectNodeContents(out)
+  const sel = window.getSelection()
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
+render()
+</script>
+</body>
+</html>

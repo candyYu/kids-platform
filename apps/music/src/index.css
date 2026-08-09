@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-kid bg-gradient-to-b from-sky-50 to-purple-50 min-h-screen;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all active:scale-95 text-lg;
+  }
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-purple-600 font-bold py-3 px-8 rounded-full shadow-md border-2 border-purple-200 transition-all active:scale-95 text-lg;
+  }
+  .card {
+    @apply bg-white rounded-3xl shadow-lg p-6;
+  }
+}

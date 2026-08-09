@@ -1,0 +1,12 @@
+{
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/music", "destination": "/music/index.html" },
+    { "source": "/music/(.*)", "destination": "/music/index.html" },
+    { "source": "/yuwen", "destination": "/yuwen/index.html" },
+    { "source": "/yuwen/(.*)", "destination": "/yuwen/index.html" }
+  ]
+}

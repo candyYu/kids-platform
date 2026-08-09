@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+
+onlyBuiltDependencies:
+  - esbuild
+  - '@parcel/watcher'
+  - fsevents
+  - sharp
+  - '@swc/core'
