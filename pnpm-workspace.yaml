@@ -1,9 +1,10 @@
 packages:
   - 'apps/*'
 
-onlyBuiltDependencies:
-  - esbuild
-  - '@parcel/watcher'
-  - fsevents
-  - sharp
-  - '@swc/core'
+# pnpm 11 新格式：allowBuilds（旧的 onlyBuiltDependencies 已废弃）
+allowBuilds:
+  esbuild: true
+  '@parcel/watcher': true
+  fsevents: true
+  sharp: true
+  '@swc/core': true
