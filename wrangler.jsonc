@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kids-platform",
+  "main": "worker.js",
+  "compatibility_date": "2025-08-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/music/*", "/yuwen/*"]
+  }
+}
