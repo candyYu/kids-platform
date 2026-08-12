@@ -36,6 +36,12 @@ export default function Home() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* 返回门户（APK 全屏没系统返回键时用） */}
+      <div className="flex justify-end mb-2">
+        <a href="/" className="inline-flex items-center gap-1 text-xs font-bold text-gray-400 bg-white/70 border border-gray-200 px-3 py-1.5 rounded-full active:scale-95">
+          🏠 回首页
+        </a>
+      </div>
       {/* 标题 */}
       <div className="text-center mb-6 mt-4">
         <h1

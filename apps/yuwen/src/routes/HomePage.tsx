@@ -28,6 +28,11 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 p-6 flex flex-col">
+      <div className="flex justify-end -mt-2 mb-2">
+        <a href="/" className="inline-flex items-center gap-1 text-xs font-bold text-pig-500 bg-white/70 border border-pig-200 px-3 py-1.5 rounded-full active:scale-95">
+          🏠 回首页
+        </a>
+      </div>
       <header className="text-center mt-6 mb-8">
         <h1 className="text-child-xl font-bold text-pig-700 mb-2">
           小小语文家
