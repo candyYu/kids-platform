@@ -1,12 +1,17 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { S2_LESSONS } from '@/data/s2-lessons'
 import { lessonL05 } from '@/data/lessons'
 import { BADGES } from '@/types'
 import BadgeDisplay from '@/components/BadgeDisplay'
+import { PIANO_SONGS } from '@/data/piano-songs'
+import { loadPianoStats, calcPianoStreak, type PianoStats } from '@/data/piano-stats'
 
 export default function ParentReport() {
   const { lessonProgress, badges, streak, practiceDates } = useStore()
+  const [pianoStats, setPianoStats] = useState<PianoStats | null>(null)
+  useEffect(() => { setPianoStats(loadPianoStats()) }, [])
   const allLessons = [lessonL05, ...S2_LESSONS].sort((a, b) => a.lessonId.localeCompare(b.lessonId))
 
   const completed = allLessons.filter(l => lessonProgress[l.lessonId]?.status === 'completed')
@@ -27,6 +32,21 @@ export default function ParentReport() {
     return d.toISOString().slice(0, 10)
   })
   const practiceThisWeek = last7Days.filter(d => practiceDates.includes(d)).length
+
+  // 钢琴小游戏统计
+  const pianoSongList = pianoStats
+    ? PIANO_SONGS.map(s => ({
+        ...s,
+        completions: pianoStats.songs[s.id]?.completions ?? 0,
+        lastAt: pianoStats.songs[s.id]?.lastCompletedAt ?? null,
+      })).sort((a, b) => b.completions - a.completions)
+    : []
+  const pianoTotalCompletions = pianoSongList.reduce((s, x) => s + x.completions, 0)
+  const pianoFreeMin = pianoStats ? Math.round(pianoStats.freePlaySeconds / 60) : 0
+  const pianoStreak = pianoStats ? calcPianoStreak(pianoStats.practiceDates) : 0
+  const pianoThisWeek = pianoStats
+    ? last7Days.filter(d => pianoStats.practiceDates.includes(d)).length
+    : 0
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -88,6 +108,50 @@ export default function ParentReport() {
             )
           })}
         </div>
+      </div>
+
+      {/* 钢琴小游戏 */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-700">🎹 钢琴小游戏</h2>
+          <Link to="/piano" className="text-xs font-bold text-purple-500 bg-purple-50 px-3 py-1 rounded-full">去弹 →</Link>
+        </div>
+        {!pianoStats || (pianoTotalCompletions === 0 && pianoFreeMin === 0) ? (
+          <p className="text-sm text-gray-400 text-center py-4">
+            还没弹过钢琴～ 等孩子玩一会儿这里就有数据啦
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-center mb-3">
+              <div className="bg-pink-50 rounded-xl p-2.5">
+                <div className="text-xl font-bold text-pink-500">{pianoTotalCompletions}</div>
+                <div className="text-[11px] text-gray-400">完整弹完</div>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-2.5">
+                <div className="text-xl font-bold text-purple-500">{pianoFreeMin}分</div>
+                <div className="text-[11px] text-gray-400">自由探索</div>
+              </div>
+              <div className="bg-orange-50 rounded-xl p-2.5">
+                <div className="text-xl font-bold text-orange-500">{pianoStreak}🔥 / {pianoThisWeek}天</div>
+                <div className="text-[11px] text-gray-400">连续 / 本周</div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {pianoSongList.filter(s => s.completions > 0).map(s => (
+                <div key={s.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <span className="text-lg">{s.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-gray-700 truncate">{s.title}</div>
+                    <div className="text-[11px] text-gray-400">
+                      {s.lastAt ? `上次：${new Date(s.lastAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}` : '—'}
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-pink-500">×{s.completions}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 徽章 */}

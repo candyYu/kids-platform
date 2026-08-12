@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { audioEngine } from '@/audio/engine'
 import { FIVE_KEYS, PIANO_SONGS, type PianoSong } from '@/data/piano-songs'
+import { recordSongComplete, addFreePlayTime } from '@/data/piano-stats'
 
 type Phase = 'tip' | 'listen' | 'play' | 'done'
 type Mode = 'learn' | 'free'
@@ -113,11 +114,54 @@ export default function Piano() {
       window.setTimeout(() => {
         setPhase('done')
         audioEngine.playCorrect()
+        recordSongComplete(song.id)
       }, 500)
     } else {
       setNoteIdx(next)
     }
   }, [noteIdx, song])
+
+  // 自由弹时长统计：从进入 free 模式第一次按键开始，每 10 秒 flush 一次
+  const freeStartRef = useRef<number | null>(null)
+  const freeTotalRef = useRef<number>(0)
+  const flushFreeTimer = useRef<number | null>(null)
+  const flushFreeTime = useCallback((commit = true) => {
+    if (freeStartRef.current != null) {
+      freeTotalRef.current += (performance.now() - freeStartRef.current) / 1000
+      freeStartRef.current = null
+    }
+    if (commit && freeTotalRef.current >= 1) {
+      addFreePlayTime(freeTotalRef.current)
+      freeTotalRef.current = 0
+    }
+  }, [])
+
+  // 进入/离开 free 模式时开始/结束计时
+  useEffect(() => {
+    if (mode === 'free') {
+      freeStartRef.current = null
+      freeTotalRef.current = 0
+      flushFreeTimer.current = window.setInterval(() => flushFreeTime(true), 10000)
+    } else {
+      if (flushFreeTimer.current) window.clearInterval(flushFreeTimer.current)
+      flushFreeTime(true)
+    }
+    return () => {
+      if (flushFreeTimer.current) window.clearInterval(flushFreeTimer.current)
+    }
+  }, [mode, flushFreeTime])
+
+  // 页面隐藏 / 离开时把剩余时长存下来
+  useEffect(() => {
+    const onHide = () => { if (mode === 'free') flushFreeTime(true) }
+    window.addEventListener('pagehide', onHide)
+    window.addEventListener('blur', onHide)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      window.removeEventListener('blur', onHide)
+      flushFreeTime(true)
+    }
+  }, [mode, flushFreeTime])
 
   const startHold = (duration: number) => {
     setHolding(true)
@@ -147,7 +191,12 @@ export default function Piano() {
   }
 
   const pressKey = (midi: number) => {
-    if (mode === 'free') { audioEngine.playPianoNote(midi, 0.8); return }
+    if (mode === 'free') {
+      // 第一次按键才开始计时（切到 free 模式但没弹不计入）
+      if (freeStartRef.current == null) freeStartRef.current = performance.now()
+      audioEngine.playPianoNote(midi, 0.8)
+      return
+    }
     if (phase !== 'play' || holding) return
     const target = song.notes[noteIdx]
     if (midi !== target.midi) { flashWrong(midi); return }
