@@ -6,6 +6,10 @@ html, body, #root {
   height: 100%;
   margin: 0;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
   overscroll-behavior: none;
   font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
   background: #FFFAF0;

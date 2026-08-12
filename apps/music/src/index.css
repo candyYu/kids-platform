@@ -5,6 +5,12 @@
 @layer base {
   body {
     @apply font-kid bg-gradient-to-b from-sky-50 to-purple-50 min-h-screen;
+    /* 禁掉 QQ/UC 浏览器长按弹复制菜单、放大镜、保存图片 */
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
   }
 }
 
