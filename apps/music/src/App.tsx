@@ -5,6 +5,7 @@ import Review from '@/pages/Review'
 import Lesson from '@/pages/Lesson'
 import EarTraining from '@/pages/EarTraining'
 import ParentReport from '@/pages/ParentReport'
+import Piano from '@/pages/Piano'
 import VoiceRestTimer from '@/components/VoiceRestTimer'
 import { useStore } from '@/store'
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/review/:challengeId" element={<Review />} />
         <Route path="/lesson/:lessonId" element={<Lesson />} />
         <Route path="/ear-training" element={<EarTraining />} />
+        <Route path="/piano" element={<Piano />} />
         <Route path="/report" element={<ParentReport />} />
       </Routes>
     </>

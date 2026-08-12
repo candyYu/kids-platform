@@ -245,6 +245,64 @@ export default function Home() {
           </div>
         </Link>
       </div>
+
+      {/* 钢琴小游戏 */}
+      <div className="card mb-6">
+        <Link
+          to="/piano"
+          className="block p-5 rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 border-2 border-pink-200 hover:from-pink-200 hover:to-purple-200 transition-all active:scale-95"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-bold text-gray-700">🎹 钢琴小游戏</div>
+              <div className="text-sm text-gray-500 mt-1">
+                跟着高亮键弹儿歌 · 自由弹奏
+              </div>
+            </div>
+            <div className="text-3xl">🐯</div>
+          </div>
+        </Link>
+      </div>
+
+      {/* 外部练耳工具 */}
+      <div className="card mb-6">
+        <h2 className="text-xl font-bold text-gray-700 mb-2">
+          🚀 更多练耳工具
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          离开小小音乐家，去其他网站练习
+        </p>
+        <div className="grid gap-2">
+          <a
+            href="https://chord-ear-trainer.pages.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-200 hover:bg-indigo-100 transition-all active:scale-95"
+          >
+            <div>
+              <div className="text-base font-bold text-gray-700">🎹 和弦听辨</div>
+              <div className="text-xs text-gray-500 mt-1">
+                七和弦听辨训练 · 学习/练习/统计
+              </div>
+            </div>
+            <span className="text-lg text-indigo-400">↗</span>
+          </a>
+          <a
+            href="https://www.shengyitongmusic.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 rounded-2xl bg-pink-50 border-2 border-pink-200 hover:bg-pink-100 transition-all active:scale-95"
+          >
+            <div>
+              <div className="text-base font-bold text-gray-700">🎵 声艺通视唱练耳</div>
+              <div className="text-xs text-gray-500 mt-1">
+                音准 · 听辨 · 视唱综合训练（游客可体验）
+              </div>
+            </div>
+            <span className="text-lg text-pink-400">↗</span>
+          </a>
+        </div>
+      </div>
     </div>
   )
 }

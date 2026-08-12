@@ -8,6 +8,10 @@ class AudioEngine {
   private rhythmSynth: Tone.Synth | null = null
   private drumSynth: Tone.MembraneSynth | null = null
   private metronome: Tone.MembraneSynth | null = null
+  // 钢琴专用 FM 合成器
+  private pianoSynth: Tone.PolySynth | null = null
+  // 错音柔和反馈
+  private boopSynth: Tone.Synth | null = null
   private initialized = false
 
   async init() {
@@ -42,6 +46,21 @@ class AudioEngine {
     }).toDestination()
     this.metronome.volume.value = -15
 
+    this.pianoSynth = new Tone.PolySynth(Tone.FMSynth, {
+      harmonicity: 3,
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.005, decay: 0.3, sustain: 0.1, release: 1.2 },
+      modulation: { type: 'triangle' },
+      modulationEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.1, release: 0.5 },
+    }).toDestination()
+    this.pianoSynth.volume.value = -6
+
+    this.boopSynth = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.005, decay: 0.12, sustain: 0, release: 0.1 },
+    }).toDestination()
+    this.boopSynth.volume.value = -15
+
     this.initialized = true
   }
 
@@ -71,6 +90,45 @@ class AudioEngine {
     await this.init()
     const freq = Tone.Frequency(midi, 'midi').toFrequency()
     this.synth!.triggerAttackRelease(freq, duration)
+  }
+
+  async playPianoNote(midi: number, duration = 0.6) {
+    await this.init()
+    const freq = Tone.Frequency(midi, 'midi').toFrequency()
+    this.pianoSynth!.triggerAttackRelease(freq, duration, undefined, 0.9)
+  }
+
+  async startPianoNote(midi: number) {
+    await this.init()
+    const freq = Tone.Frequency(midi, 'midi').toFrequency()
+    this.pianoSynth!.triggerAttack(freq, undefined, 0.9)
+  }
+
+  stopPianoNote() {
+    this.pianoSynth?.releaseAll()
+  }
+
+  async playPianoSequence(
+    notes: { midi: number; duration: number }[],
+    tempo = 70,
+  ): Promise<{ totalDuration: number; stop: () => void }> {
+    await this.init()
+    const beat = 60 / tempo
+    const start = Tone.now() + 0.15
+    let t = 0
+    for (const n of notes) {
+      const freq = Tone.Frequency(n.midi, 'midi').toFrequency()
+      const dur = n.duration * beat * 0.95
+      this.pianoSynth!.triggerAttackRelease(freq, dur, start + t * beat)
+      t += n.duration
+    }
+    const totalDuration = t * beat
+    return { totalDuration, stop: () => this.pianoSynth!.releaseAll() }
+  }
+
+  async playBoop() {
+    await this.init()
+    this.boopSynth!.triggerAttackRelease('C3', 0.12)
   }
 
   /** 播放 MIDI 音符序列（用 Tone.js 精确调度，不用 setTimeout） */
