@@ -8,8 +8,12 @@ class AudioEngine {
   private rhythmSynth: Tone.Synth | null = null
   private drumSynth: Tone.MembraneSynth | null = null
   private metronome: Tone.MembraneSynth | null = null
-  // 钢琴专用 FM 合成器
+  // 钢琴专用 FM 合成器（采样未加载/加载失败时的兜底）
   private pianoSynth: Tone.PolySynth | null = null
+  // 真钢琴采样（Salamander，懒加载）
+  private pianoSampler: Tone.Sampler | null = null
+  private samplerLoading: Promise<void> | null = null
+  private samplerReady = false
   // 错音柔和反馈
   private boopSynth: Tone.Synth | null = null
   private initialized = false
@@ -94,18 +98,80 @@ class AudioEngine {
 
   async playPianoNote(midi: number, duration = 0.6) {
     await this.init()
+    const note = Tone.Frequency(midi, 'midi').toNote()
+    if (this.samplerReady && this.pianoSampler) {
+      this.pianoSampler.triggerAttackRelease(note, duration, undefined, 0.9)
+      return
+    }
     const freq = Tone.Frequency(midi, 'midi').toFrequency()
     this.pianoSynth!.triggerAttackRelease(freq, duration, undefined, 0.9)
   }
 
   async startPianoNote(midi: number) {
     await this.init()
+    const note = Tone.Frequency(midi, 'midi').toNote()
+    if (this.samplerReady && this.pianoSampler) {
+      this.pianoSampler.triggerAttack(note, undefined, 0.9)
+      return
+    }
     const freq = Tone.Frequency(midi, 'midi').toFrequency()
     this.pianoSynth!.triggerAttack(freq, undefined, 0.9)
   }
 
   stopPianoNote() {
+    this.pianoSampler?.releaseAll()
     this.pianoSynth?.releaseAll()
+  }
+
+  /** 预加载真钢琴采样（5 个键 C-G）。失败不报错，FM 自动兜底 */
+  ensurePianoSampler(): Promise<void> {
+    if (this.samplerReady) return Promise.resolve()
+    if (this.samplerLoading) return this.samplerLoading
+    this.samplerLoading = this.initSampler().catch(() => { /* 静默，FM 兜底 */ })
+    return this.samplerLoading
+  }
+
+  private async initSampler() {
+    await Tone.start()
+    // Salamander 三角钢琴采样（CDN 只有锚点音，Tone.Sampler 自动在锚点间插值）
+    // C4-G4 范围用 C4/A4/C5 三个锚点即可准确覆盖
+    const base = 'https://tonejs.github.io/audio/salamander/'
+    const urls: Record<string, string> = {
+      C3: 'C3.mp3',
+      C4: 'C4.mp3',
+      A4: 'A4.mp3',
+      C5: 'C5.mp3',
+    }
+    await new Promise<void>((resolve, reject) => {
+      let settled = false
+      const s = new Tone.Sampler({
+        urls,
+        release: 1.2,
+        baseUrl: base,
+        onload: () => {
+          if (settled) return
+          settled = true
+          s.toDestination()
+          s.volume.value = -4
+          this.pianoSampler = s
+          this.samplerReady = true
+          resolve()
+        },
+        onerror: (err) => {
+          if (settled) return
+          settled = true
+          reject(err)
+        },
+      })
+      // 15 秒兜底超时（网络异常时 FM 自动接管）
+      window.setTimeout(() => {
+        if (!settled) { settled = true; resolve() }
+      }, 15000)
+    })
+  }
+
+  isSamplerReady() {
+    return this.samplerReady
   }
 
   async playPianoSequence(

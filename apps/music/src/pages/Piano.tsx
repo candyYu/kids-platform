@@ -17,12 +17,24 @@ export default function Piano() {
   const [holding, setHolding] = useState(false)
   const [holdProgress, setHoldProgress] = useState(0)
   const [showTip, setShowTip] = useState(false)
+  const [sampleStatus, setSampleStatus] = useState<'loading' | 'ready' | 'fallback'>('loading')
   const wrongTimer = useRef<number | null>(null)
   const holdRaf = useRef<number | null>(null)
   const demoStop = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (!localStorage.getItem('piano-tip-seen')) setShowTip(true)
+    // 进入页面就异步加载真钢琴采样；加载期间先用 FM 音色兜底，加载完无缝升级
+    let cancelled = false
+    audioEngine.ensurePianoSampler().then(() => {
+      if (cancelled) return
+      setSampleStatus(audioEngine.isSamplerReady() ? 'ready' : 'fallback')
+    })
+    // 2.5 秒后若仍未加载完，先用 FM 音色进入可玩状态（后续加载完自动升级）
+    const tm = window.setTimeout(() => {
+      if (!cancelled) setSampleStatus(s => s === 'loading' ? 'fallback' : s)
+    }, 2500)
+    return () => { cancelled = true; window.clearTimeout(tm) }
   }, [])
 
   const closeTip = () => {
@@ -189,7 +201,25 @@ export default function Piano() {
         <h1 className="text-3xl font-bold text-purple-600">🎹 钢琴小游戏</h1>
         <button onClick={() => setShowTip(true)} className="text-2xl" aria-label="手型提示">🤲</button>
       </div>
-      <p className="text-gray-400 text-sm mb-5">右手五指把位 · 慢慢弹不着急</p>
+      <p className="text-gray-400 text-sm mb-5 flex items-center gap-2 flex-wrap">
+        <span>右手五指把位 · 慢慢弹不着急</span>
+        {sampleStatus === 'loading' && (
+          <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+            加载真钢琴音色…
+          </span>
+        )}
+        {sampleStatus === 'ready' && (
+          <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full">
+            🎹 三角钢琴音色
+          </span>
+        )}
+        {sampleStatus === 'fallback' && (
+          <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" title="采样加载慢，先用电子音；加载完自动切换">
+            🔊 电子音色
+          </span>
+        )}
+      </p>
 
       <div className="flex bg-gray-100 rounded-2xl p-1 mb-5">
         <button onClick={() => setMode('learn')} className={`flex-1 py-2 rounded-xl text-sm font-bold ${mode === 'learn' ? 'bg-white text-purple-600 shadow' : 'text-gray-400'}`}>🎯 跟我弹</button>
