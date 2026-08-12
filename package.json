@@ -9,5 +9,8 @@
     "build": "pnpm -r build && rm -rf dist && mkdir dist && cp -r apps/web/dist/. dist/ && mkdir -p dist/music && cp -r apps/music/dist/. dist/music/ && mkdir -p dist/yuwen && cp -r apps/yuwen/dist/. dist/yuwen/",
     "build:web": "pnpm --filter @kids/web build"
   },
-  "packageManager": "pnpm@11.20.0"
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.13"
+  }
 }
