@@ -7,6 +7,7 @@ import { S2_LESSONS } from '@/data/s2-lessons'
 import { S3_LESSONS } from '@/data/s3-lessons'
 import { S4_LESSONS } from '@/data/s4-lessons'
 import BadgeDisplay from '@/components/BadgeDisplay'
+import DailyTasks from '@/components/DailyTasks'
 
 export default function Home() {
   const { lessonProgress, earProgress, badges, streak } = useStore()
@@ -61,6 +62,9 @@ export default function Home() {
           <div className="text-xs text-gray-400">连续天🔥</div>
         </div>
       </div>
+
+      {/* 今日小任务 */}
+      <DailyTasks />
 
       {/* 自由练习 + 家长报告 */}
       <div className="flex gap-2 mb-6">
@@ -155,6 +159,7 @@ export default function Home() {
       </div>
 
       {/* 课程地图 - 按阶段分组（可折叠 + 跨阶段解锁） */}
+      <div id="lessons">
       {([
         { title: '📚 S2 节奏进阶课程', stage: 'S2', lessons: s2Lessons, color: 'orange', prereq: null as string | null },
         { title: '🎼 S3 中级课程', stage: 'S3', lessons: s3Lessons, color: 'blue', prereq: 'S2-L24' },
@@ -224,6 +229,7 @@ export default function Home() {
           </div>
         )
       })}
+      </div>{/* /#lessons */}
 
       {/* 耳朵专项 */}
       <div className="card mb-6">
