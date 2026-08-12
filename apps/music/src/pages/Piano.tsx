@@ -7,6 +7,13 @@ import { recordSongComplete, addFreePlayTime } from '@/data/piano-stats'
 type Phase = 'tip' | 'listen' | 'play' | 'done'
 type Mode = 'learn' | 'free'
 
+// 录音事件：按下 / 抬起（重放时用钢琴引擎）
+interface RecEvent {
+  type: 'on' | 'off'
+  midi: number
+  t: number   // 相对录音开始的毫秒
+}
+
 export default function Piano() {
   const [songId, setSongId] = useState(PIANO_SONGS[0].id)
   const song: PianoSong = PIANO_SONGS.find(s => s.id === songId)!
@@ -19,6 +26,16 @@ export default function Piano() {
   const [holdProgress, setHoldProgress] = useState(0)
   const [showTip, setShowTip] = useState(false)
   const [sampleStatus, setSampleStatus] = useState<'loading' | 'ready' | 'fallback'>('loading')
+  // 录音：录制的是"琴键事件"，重放时用同样的钢琴引擎，不录音频
+  const [recording, setRecording] = useState<RecEvent[] | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const recStartRef = useRef<number>(0)
+  const recEventsRef = useRef<RecEvent[]>([])
+  const activeRecNote = useRef<Map<number, number>>(new Map()) // midi -> startMs
+  const playbackTimers = useRef<number[]>([])
+  const recMaxTimer = useRef<number | null>(null)
+  const curTargetMidi = useRef<number | null>(null)
   const wrongTimer = useRef<number | null>(null)
   const holdRaf = useRef<number | null>(null)
   const demoStop = useRef<(() => void) | null>(null)
@@ -35,7 +52,13 @@ export default function Piano() {
     const tm = window.setTimeout(() => {
       if (!cancelled) setSampleStatus(s => s === 'loading' ? 'fallback' : s)
     }, 2500)
-    return () => { cancelled = true; window.clearTimeout(tm) }
+    return () => {
+      cancelled = true
+      window.clearTimeout(tm)
+      // 离开页面：停掉回放，别让钢琴音继续响
+      stopPlayback()
+      if (recMaxTimer.current) window.clearTimeout(recMaxTimer.current)
+    }
   }, [])
 
   const closeTip = () => {
@@ -50,6 +73,14 @@ export default function Piano() {
     setHoldProgress(0)
     setWrongMidi(null)
     if (demoStop.current) { demoStop.current(); demoStop.current = null }
+    // 重置录音
+    stopPlayback()
+    if (isRecording) setIsRecording(false)
+    if (recMaxTimer.current) { window.clearTimeout(recMaxTimer.current); recMaxTimer.current = null }
+    recEventsRef.current = []
+    activeRecNote.current.clear()
+    setRecording(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => { resetSong() }, [songId, mode, resetSong])
@@ -99,6 +130,21 @@ export default function Piano() {
     }
     if (phase !== 'listen') autoPlayed.current = false
   }, [mode, phase, playDemo])
+
+  // 进入"轮到你弹"时自动开始录音（不限时，弹完自动停）
+  const autoRecStarted = useRef(false)
+  useEffect(() => {
+    if (mode === 'learn' && phase === 'play' && !autoRecStarted.current) {
+      autoRecStarted.current = true
+      beginRecord(0)
+    }
+    if (phase !== 'play') autoRecStarted.current = false
+    // 弹完（done）时停止录音，刚才那一遍已存入 recording
+    if (mode === 'learn' && phase === 'done' && isRecording) {
+      stopRecording()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, phase, isRecording])
 
   const flashWrong = (midi: number) => {
     audioEngine.playBoop()
@@ -166,6 +212,7 @@ export default function Piano() {
   const startHold = (duration: number) => {
     setHolding(true)
     setHoldProgress(0)
+    curTargetMidi.current = song.notes[noteIdx].midi
     const beatMs = 60 / song.tempo * 1000
     const need = duration * beatMs * 0.92
     const t0 = performance.now()
@@ -175,6 +222,8 @@ export default function Piano() {
       if (p >= 1) {
         setHolding(false)
         setHoldProgress(0)
+        audioEngine.stopPianoNote()
+        if (curTargetMidi.current != null) recNoteOff(curTargetMidi.current)
         noteHit()
         return
       }
@@ -190,11 +239,96 @@ export default function Piano() {
     setHoldProgress(0)
   }
 
+  // ===== 录音 / 回放 =====
+  const recNoteOn = (midi: number) => {
+    if (!isRecording) return
+    if (activeRecNote.current.has(midi)) return
+    const t = performance.now() - recStartRef.current
+    activeRecNote.current.set(midi, t)
+    recEventsRef.current.push({ type: 'on', midi, t })
+  }
+  const recNoteOff = (midi: number) => {
+    if (!isRecording) return
+    const startT = activeRecNote.current.get(midi)
+    if (startT == null) return
+    activeRecNote.current.delete(midi)
+    const t = performance.now() - recStartRef.current
+    recEventsRef.current.push({ type: 'off', midi, t })
+  }
+  /** 内部：开始录音；maxMs<=0 表示不限时（跟弹模式用） */
+  const beginRecord = (maxMs: number) => {
+    if (recMaxTimer.current) window.clearTimeout(recMaxTimer.current)
+    recEventsRef.current = []
+    activeRecNote.current.clear()
+    recStartRef.current = performance.now()
+    setRecording(null)
+    setIsRecording(true)
+    if (maxMs > 0) {
+      recMaxTimer.current = window.setTimeout(() => stopRecording(), maxMs)
+    }
+  }
+  const startRecording = () => beginRecord(30000)
+  const stopRecording = () => {
+    setIsRecording(was => {
+      if (!was) return was
+      if (recMaxTimer.current) { window.clearTimeout(recMaxTimer.current); recMaxTimer.current = null }
+      // 把还按着的音补一个 off
+      const now = performance.now() - recStartRef.current
+      activeRecNote.current.forEach((_startT, midi) => {
+        recEventsRef.current.push({ type: 'off', midi, t: now })
+      })
+      activeRecNote.current.clear()
+      if (recEventsRef.current.length > 0) setRecording([...recEventsRef.current])
+      return false
+    })
+  }
+  const clearRecording = () => {
+    setRecording(null)
+    recEventsRef.current = []
+  }
+  const playRecording = async () => {
+    if (!recording || recording.length === 0 || isPlaying) return
+    setIsPlaying(true)
+    // 找出每个 on 的配对 off，整理成 (midi, startMs, durMs)
+    const held = new Map<number, number>()
+    const notes: { midi: number; startMs: number; durMs: number }[] = []
+    for (const ev of recording) {
+      if (ev.type === 'on') held.set(ev.midi, ev.t)
+      else {
+        const s = held.get(ev.midi)
+        if (s != null) {
+          notes.push({ midi: ev.midi, startMs: s, durMs: Math.max(120, ev.t - s) })
+          held.delete(ev.midi)
+        }
+      }
+    }
+    // 未配对的 on（理论上 stopRecording 已补 off，兜底）
+    held.forEach((s, midi) => notes.push({ midi, startMs: s, durMs: 800 }))
+    notes.sort((a, b) => a.startMs - b.startMs)
+    const totalDur = notes.reduce((m, n) => Math.max(m, n.startMs + n.durMs), 0)
+    for (const n of notes) {
+      const id = window.setTimeout(() => audioEngine.startPianoNote(n.midi), n.startMs)
+      playbackTimers.current.push(id)
+      const offId = window.setTimeout(() => audioEngine.stopPianoNote(), n.startMs + n.durMs)
+      playbackTimers.current.push(offId)
+    }
+    const endId = window.setTimeout(() => setIsPlaying(false), totalDur + 200)
+    playbackTimers.current.push(endId)
+  }
+  const stopPlayback = () => {
+    playbackTimers.current.forEach(id => window.clearTimeout(id))
+    playbackTimers.current = []
+    audioEngine.stopPianoNote()
+    setIsPlaying(false)
+  }
+
   const pressKey = (midi: number) => {
     if (mode === 'free') {
       // 第一次按键才开始计时（切到 free 模式但没弹不计入）
       if (freeStartRef.current == null) freeStartRef.current = performance.now()
-      audioEngine.playPianoNote(midi, 0.8)
+      // 按住延音，抬手才停（这样录音能记下长短）
+      audioEngine.startPianoNote(midi)
+      recNoteOn(midi)
       return
     }
     if (phase !== 'play' || holding) return
@@ -202,20 +336,29 @@ export default function Piano() {
     if (midi !== target.midi) { flashWrong(midi); return }
     // 对了
     audioEngine.startPianoNote(midi)
+    recNoteOn(midi)
     if (target.duration >= 1.5) {
       startHold(target.duration)
     } else {
       // 短音：点一下就过
       window.setTimeout(() => audioEngine.stopPianoNote(), target.duration * 60 / song.tempo * 1000 * 0.9)
+      recNoteOff(midi)
       noteHit()
     }
   }
 
   const releaseKey = (midi: number) => {
-    if (mode === 'free') return
+    if (mode === 'free') {
+      audioEngine.stopPianoNote()
+      recNoteOff(midi)
+      return
+    }
     if (phase !== 'play') return
     const target = song.notes[noteIdx]
-    if (midi === target?.midi && holding) cancelHold()
+    if (midi === target?.midi && holding) {
+      recNoteOff(midi)
+      cancelHold()
+    }
   }
 
   // 键盘
@@ -339,7 +482,15 @@ export default function Piano() {
               <p className="text-gray-500 text-sm mb-4">你完整弹完了《{song.title}》</p>
               <div className="flex gap-2 justify-center flex-wrap">
                 <button onClick={resetSong} className="btn-primary">🔁 再弹一次</button>
-                <button onClick={playDemo} className="px-4 py-2 rounded-xl bg-purple-100 text-purple-600 text-sm font-bold">🎵 听示范</button>
+                <button onClick={playDemo} className="px-4 py-2 rounded-xl bg-purple-100 text-purple-600 text-sm font-bold">🎵 听老师</button>
+                {recording && recording.length > 0 && (
+                  <button
+                    onClick={() => isPlaying ? stopPlayback() : playRecording()}
+                    className="px-4 py-2 rounded-xl bg-pink-100 text-pink-600 text-sm font-bold"
+                  >
+                    {isPlaying ? '⏸ 停' : '🎧 听我弹的'}
+                  </button>
+                )}
                 {nextSong && <button onClick={() => setSongId(nextSong.id)} className="px-4 py-2 rounded-xl bg-pink-100 text-pink-600 text-sm font-bold">下一首：{nextSong.title} →</button>}
               </div>
             </div>
@@ -347,8 +498,38 @@ export default function Piano() {
         </>
       )}
       {mode === 'free' && (
-        <div className="card mb-5 text-center py-4">
-          <p className="text-gray-500 text-sm">🌈 随便弹！触屏点键盘，或电脑键盘 <span className="font-mono bg-gray-100 px-1 rounded">A S D F G</span></p>
+        <div className="card mb-5 py-4">
+          <p className="text-gray-500 text-sm text-center mb-3">
+            🌈 随便弹！触屏点键盘，或电脑键盘 <span className="font-mono bg-gray-100 px-1 rounded">A S D F G</span>
+          </p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {!isRecording && (
+              <button onClick={startRecording} className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-bold shadow active:scale-95">
+                🔴 录一段
+              </button>
+            )}
+            {isRecording && (
+              <button onClick={stopRecording} className="px-4 py-2 rounded-xl bg-gray-700 text-white text-sm font-bold shadow animate-pulse active:scale-95">
+                ⏹ 停止录音
+              </button>
+            )}
+            {recording && recording.length > 0 && !isRecording && (
+              <>
+                <button
+                  onClick={() => isPlaying ? stopPlayback() : playRecording()}
+                  className="px-4 py-2 rounded-xl bg-pink-100 text-pink-600 text-sm font-bold active:scale-95"
+                >
+                  {isPlaying ? '⏸ 停' : '🎧 听刚才弹的'}
+                </button>
+                <button onClick={clearRecording} className="px-3 py-2 rounded-xl bg-gray-100 text-gray-500 text-sm font-bold active:scale-95" aria-label="清除录音">
+                  🗑
+                </button>
+              </>
+            )}
+          </div>
+          {isRecording && (
+            <p className="text-center text-xs text-red-500 mt-2 font-bold animate-pulse">● 录音中…（最多 30 秒）</p>
+          )}
         </div>
       )}
 

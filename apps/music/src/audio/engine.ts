@@ -183,13 +183,21 @@ class AudioEngine {
     const start = Tone.now() + 0.15
     let t = 0
     for (const n of notes) {
-      const freq = Tone.Frequency(n.midi, 'midi').toFrequency()
       const dur = n.duration * beat * 0.95
-      this.pianoSynth!.triggerAttackRelease(freq, dur, start + t * beat)
+      if (this.samplerReady && this.pianoSampler) {
+        const note = Tone.Frequency(n.midi, 'midi').toNote()
+        this.pianoSampler.triggerAttackRelease(note, dur, start + t * beat, 0.9)
+      } else {
+        const freq = Tone.Frequency(n.midi, 'midi').toFrequency()
+        this.pianoSynth!.triggerAttackRelease(freq, dur, start + t * beat, 0.9)
+      }
       t += n.duration
     }
     const totalDuration = t * beat
-    return { totalDuration, stop: () => this.pianoSynth!.releaseAll() }
+    return {
+      totalDuration,
+      stop: () => { this.pianoSampler?.releaseAll(); this.pianoSynth!.releaseAll() },
+    }
   }
 
   async playBoop() {
