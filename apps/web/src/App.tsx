@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import Home from './pages/Home'
+import { isUnlocked, setUnlocked } from './auth/gate'
 
-// 密码页：6 位数字密码，存 localStorage
-// 默认密码 '000000'（你部署后在 Vercel 后台改 VITE_KIDS_PASSWORD 环境变量）
+// 密码页：6 位数字密码，存 localStorage（7 天有效）+ sessionStorage（当前标签页）
+// 默认密码 '000000'，部署时在 GitHub Actions / Vercel 后台改 VITE_KIDS_PASSWORD 环境变量
 // 6 岁孩子不输入，用 9 键大键盘点击
 
 const PASSWORD = import.meta.env.VITE_KIDS_PASSWORD || '000000'
-const STORAGE_KEY = 'kids-platform-unlocked'
 
 export default function App() {
-  const [unlocked, setUnlocked] = useState<boolean>(
-    () => localStorage.getItem(STORAGE_KEY) === 'yes'
-  )
+  const [unlocked, setUnlockedState] = useState<boolean>(() => isUnlocked())
   const [input, setInput] = useState('')
   const [error, setError] = useState(false)
 
@@ -26,8 +24,8 @@ export default function App() {
       // 6 位输完，校验
       setTimeout(() => {
         if (next === PASSWORD) {
-          localStorage.setItem(STORAGE_KEY, 'yes')
-          setUnlocked(true)
+          setUnlocked()
+          setUnlockedState(true)
         } else {
           setError(true)
           setTimeout(() => setInput(''), 600)
