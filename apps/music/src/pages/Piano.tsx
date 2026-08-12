@@ -131,12 +131,13 @@ export default function Piano() {
     if (phase !== 'listen') autoPlayed.current = false
   }, [mode, phase, playDemo])
 
-  // 进入"轮到你弹"时自动开始录音（不限时，弹完自动停）
+  // 进入"轮到你弹"时准备录音（不立即开始，等按第一个键才真正开始，避免录进犹豫时间）
   const autoRecStarted = useRef(false)
+  const autoRecArmed = useRef(false)
   useEffect(() => {
     if (mode === 'learn' && phase === 'play' && !autoRecStarted.current) {
       autoRecStarted.current = true
-      beginRecord(0)
+      autoRecArmed.current = true  // 武装：第一个键按下时 beginRecord
     }
     if (phase !== 'play') autoRecStarted.current = false
     // 弹完（done）时停止录音，刚才那一遍已存入 recording
@@ -302,17 +303,20 @@ export default function Piano() {
         }
       }
     }
-    // 未配对的 on（理论上 stopRecording 已补 off，兜底）
     held.forEach((s, midi) => notes.push({ midi, startMs: s, durMs: 800 }))
     notes.sort((a, b) => a.startMs - b.startMs)
-    const totalDur = notes.reduce((m, n) => Math.max(m, n.startMs + n.durMs), 0)
+    // 裁掉开头的静音（从第一个音开始播），结尾静音也去掉
+    if (notes.length === 0) { setIsPlaying(false); return }
+    const leadMs = notes[0].startMs
+    const lastEnd = notes.reduce((m, n) => Math.max(m, n.startMs + n.durMs), 0)
     for (const n of notes) {
-      const id = window.setTimeout(() => audioEngine.startPianoNote(n.midi), n.startMs)
+      const at = n.startMs - leadMs
+      const id = window.setTimeout(() => audioEngine.startPianoNote(n.midi), at)
       playbackTimers.current.push(id)
-      const offId = window.setTimeout(() => audioEngine.stopPianoNote(), n.startMs + n.durMs)
+      const offId = window.setTimeout(() => audioEngine.stopPianoNote(), at + n.durMs)
       playbackTimers.current.push(offId)
     }
-    const endId = window.setTimeout(() => setIsPlaying(false), totalDur + 200)
+    const endId = window.setTimeout(() => setIsPlaying(false), lastEnd - leadMs + 200)
     playbackTimers.current.push(endId)
   }
   const stopPlayback = () => {
@@ -332,6 +336,11 @@ export default function Piano() {
       return
     }
     if (phase !== 'play' || holding) return
+    // 跟弹模式：按第一个正确的键才真正开始录音
+    if (autoRecArmed.current) {
+      autoRecArmed.current = false
+      beginRecord(0)
+    }
     const target = song.notes[noteIdx]
     if (midi !== target.midi) { flashWrong(midi); return }
     // 对了
@@ -446,7 +455,14 @@ export default function Piano() {
             <div className="card mb-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-400">第 {noteIdx + 1} / {song.notes.length} 个音</span>
-                <button onClick={playDemo} className="text-sm font-bold bg-purple-100 text-purple-600 px-3 py-1.5 rounded-full">🔁 听示范</button>
+                <div className="flex items-center gap-2">
+                  {isRecording && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> 录音中
+                    </span>
+                  )}
+                  <button onClick={playDemo} className="text-sm font-bold bg-purple-100 text-purple-600 px-3 py-1.5 rounded-full">🔁 听示范</button>
+                </div>
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
                 <div className="h-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all" style={{ width: `${progress}%` }} />

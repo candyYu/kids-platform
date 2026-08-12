@@ -180,23 +180,35 @@ class AudioEngine {
   ): Promise<{ totalDuration: number; stop: () => void }> {
     await this.init()
     const beat = 60 / tempo
-    const start = Tone.now() + 0.15
+    // 用 setTimeout 逐音调度（而不是一次性排进音频时钟），这样 stop() 能真正取消还没响的音
+    const timers: number[] = []
+    let cancelled = false
     let t = 0
     for (const n of notes) {
       const dur = n.duration * beat * 0.95
-      if (this.samplerReady && this.pianoSampler) {
-        const note = Tone.Frequency(n.midi, 'midi').toNote()
-        this.pianoSampler.triggerAttackRelease(note, dur, start + t * beat, 0.9)
-      } else {
-        const freq = Tone.Frequency(n.midi, 'midi').toFrequency()
-        this.pianoSynth!.triggerAttackRelease(freq, dur, start + t * beat, 0.9)
-      }
+      const delayMs = Math.max(0, t * beat * 1000 - 80) // 略提前调度，保证准时
+      const id = window.setTimeout(() => {
+        if (cancelled) return
+        if (this.samplerReady && this.pianoSampler) {
+          const note = Tone.Frequency(n.midi, 'midi').toNote()
+          this.pianoSampler.triggerAttackRelease(note, dur, undefined, 0.9)
+        } else {
+          const freq = Tone.Frequency(n.midi, 'midi').toFrequency()
+          this.pianoSynth!.triggerAttackRelease(freq, dur, undefined, 0.9)
+        }
+      }, delayMs)
+      timers.push(id)
       t += n.duration
     }
     const totalDuration = t * beat
     return {
       totalDuration,
-      stop: () => { this.pianoSampler?.releaseAll(); this.pianoSynth!.releaseAll() },
+      stop: () => {
+        cancelled = true
+        timers.forEach(id => window.clearTimeout(id))
+        this.pianoSampler?.releaseAll()
+        this.pianoSynth!.releaseAll()
+      },
     }
   }
 
