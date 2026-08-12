@@ -7,11 +7,23 @@ import { BADGES } from '@/types'
 import BadgeDisplay from '@/components/BadgeDisplay'
 import { PIANO_SONGS, FIVE_KEYS } from '@/data/piano-songs'
 import { loadPianoStats, calcPianoStreak, type PianoStats } from '@/data/piano-stats'
+import { loadViolinStats, setViolinRewards, type ViolinStats } from '@/data/violin-stats'
 
 export default function ParentReport() {
   const { lessonProgress, badges, streak, practiceDates } = useStore()
   const [pianoStats, setPianoStats] = useState<PianoStats | null>(null)
   useEffect(() => { setPianoStats(loadPianoStats()) }, [])
+  const [violinStats, setViolinStats] = useState<ViolinStats | null>(null)
+  useEffect(() => { setViolinStats(loadViolinStats()) }, [])
+  const [rewardsText, setRewardsText] = useState('')
+  useEffect(() => {
+    if (violinStats) setRewardsText(violinStats.rewards.join('\n'))
+  }, [violinStats])
+  const saveRewards = () => {
+    const list = rewardsText.split('\n').map(s => s.trim()).filter(Boolean)
+    setViolinRewards(list)
+    setViolinStats(loadViolinStats())
+  }
   const allLessons = [lessonL05, ...S2_LESSONS].sort((a, b) => a.lessonId.localeCompare(b.lessonId))
 
   const completed = allLessons.filter(l => lessonProgress[l.lessonId]?.status === 'completed')
@@ -187,6 +199,68 @@ export default function ParentReport() {
       {/* 徽章 */}
       <div className="mb-6">
         <BadgeDisplay badges={badges} />
+      </div>
+
+      {/* 小提琴练习 */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-700">🎻 小提琴练习</h2>
+          <Link to="/violin" className="text-xs font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-full">去练习 →</Link>
+        </div>
+        {!violinStats || violinStats.totalSeconds === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">
+            还没练过小提琴～ 点"去练习"开始吧
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-center mb-3">
+            <div className="bg-amber-50 rounded-xl p-2.5">
+              <div className="text-xl font-bold text-amber-500">{Math.floor(violinStats.totalSeconds / 60)}</div>
+              <div className="text-[11px] text-gray-400">累计分钟</div>
+            </div>
+            <div className="bg-yellow-50 rounded-xl p-2.5">
+              <div className="text-xl font-bold text-yellow-500">⭐{violinStats.stars}</div>
+              <div className="text-[11px] text-gray-400">可用星星</div>
+            </div>
+            <div className="bg-green-50 rounded-xl p-2.5">
+              <div className="text-xl font-bold text-green-500">{violinStats.redeemed}</div>
+              <div className="text-[11px] text-gray-400">已兑换</div>
+            </div>
+          </div>
+        )}
+        {violinStats && violinStats.redemptions.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs font-bold text-gray-500 mb-1.5">最近兑换</div>
+            <div className="space-y-1">
+              {violinStats.redemptions.slice(0, 5).map((r, i) => (
+                <div key={i} className="flex justify-between text-xs bg-gray-50 rounded-lg px-2 py-1">
+                  <span className="text-gray-600 truncate">{r.reward}</span>
+                  <span className="text-gray-400 shrink-0 ml-2">
+                    {new Date(r.at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 奖励配置 */}
+        <div className="mt-3 p-3 bg-orange-50 rounded-xl">
+          <label className="block text-xs font-bold text-orange-700 mb-1.5">
+            🎁 奖励池（每行一个，孩子满 10 颗星可兑换第一个）
+          </label>
+          <textarea
+            value={rewardsText}
+            onChange={e => setRewardsText(e.target.value)}
+            rows={3}
+            className="w-full p-2 rounded-lg border border-orange-200 text-sm resize-y focus:outline-none focus:border-orange-400 bg-white"
+            placeholder={'一次公园游玩\n一本新绘本'}
+          />
+          <button
+            onClick={saveRewards}
+            className="mt-2 px-4 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-bold active:scale-95"
+          >
+            保存奖励
+          </button>
+        </div>
       </div>
 
       {/* 薄弱环节 */}

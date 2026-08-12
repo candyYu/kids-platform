@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '@/store'
 import { loadPianoStats } from '@/data/piano-stats'
+import { loadViolinStats } from '@/data/violin-stats'
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
@@ -26,6 +27,24 @@ function useTodayPianoPracticed(): boolean {
   return practiced
 }
 
+function useTodayViolinPracticed(): boolean {
+  const [practiced, setPracticed] = useState(false)
+  useEffect(() => {
+    const check = () => {
+      const stats = loadViolinStats()
+      setPracticed(stats.todayDate === todayStr() && stats.todaySeconds > 0)
+    }
+    check()
+    window.addEventListener('focus', check)
+    window.addEventListener('visibilitychange', check)
+    return () => {
+      window.removeEventListener('focus', check)
+      window.removeEventListener('visibilitychange', check)
+    }
+  }, [])
+  return practiced
+}
+
 interface Task {
   key: string
   emoji: string
@@ -38,6 +57,7 @@ interface Task {
 export default function DailyTasks() {
   const { practiceDates, earProgress, loaded } = useStore()
   const pianoToday = useTodayPianoPracticed()
+  const violinToday = useTodayViolinPracticed()
 
   // 今天有没有完成任意一节课（practiceDates 由 recordPractice 在课程完成时写入）
   const lessonToday = practiceDates.includes(todayStr())
@@ -46,6 +66,7 @@ export default function DailyTasks() {
 
   const tasks: Task[] = [
     { key: 'piano', emoji: '🎹', label: '弹一首钢琴曲', done: pianoToday, to: '/piano', bg: 'pink' },
+    { key: 'violin', emoji: '🎻', label: '练小提琴', done: violinToday, to: '/violin', bg: 'amber' },
     { key: 'ear', emoji: '👂', label: '听一听小耳朵', done: earToday, to: '/ear-training', bg: 'blue' },
     { key: 'lesson', emoji: '📚', label: '上一节小课', done: lessonToday, to: '/', bg: 'orange' },
   ]
@@ -57,6 +78,7 @@ export default function DailyTasks() {
 
   const bgMap: Record<string, { done: string; todo: string }> = {
     pink: { done: 'bg-green-50 border-green-200', todo: 'bg-pink-50 border-pink-200' },
+    amber: { done: 'bg-green-50 border-green-200', todo: 'bg-amber-50 border-amber-200' },
     blue: { done: 'bg-green-50 border-green-200', todo: 'bg-blue-50 border-blue-200' },
     orange: { done: 'bg-green-50 border-green-200', todo: 'bg-orange-50 border-orange-200' },
   }
@@ -72,7 +94,7 @@ export default function DailyTasks() {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {tasks.map(t => {
           const cls = t.done ? bgMap[t.bg].done : bgMap[t.bg].todo
           const inner = (

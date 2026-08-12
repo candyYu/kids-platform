@@ -6,6 +6,7 @@ import Lesson from '@/pages/Lesson'
 import EarTraining from '@/pages/EarTraining'
 import ParentReport from '@/pages/ParentReport'
 import Piano from '@/pages/Piano'
+import Violin from '@/pages/Violin'
 import VoiceRestTimer from '@/components/VoiceRestTimer'
 import { useStore } from '@/store'
 
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/lesson/:lessonId" element={<Lesson />} />
         <Route path="/ear-training" element={<EarTraining />} />
         <Route path="/piano" element={<Piano />} />
+        <Route path="/violin" element={<Violin />} />
         <Route path="/report" element={<ParentReport />} />
       </Routes>
     </>

@@ -270,6 +270,24 @@ export default function Home() {
         </Link>
       </div>
 
+      {/* 小提琴自主练习 */}
+      <div className="card mb-6">
+        <Link
+          to="/violin"
+          className="block p-5 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 border-2 border-amber-200 hover:from-amber-200 hover:to-orange-200 transition-all active:scale-95"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-bold text-gray-700">🎻 小提琴练习</div>
+              <div className="text-sm text-gray-500 mt-1">
+                每天 10 分钟 · 集星星换奖励
+              </div>
+            </div>
+            <div className="text-3xl">⭐</div>
+          </div>
+        </Link>
+      </div>
+
       {/* 外部练耳工具 */}
       <div className="card mb-6">
         <h2 className="text-xl font-bold text-gray-700 mb-2">
