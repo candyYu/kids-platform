@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { audioEngine } from '@/audio/engine'
 import { FIVE_KEYS, PIANO_SONGS, type PianoSong } from '@/data/piano-songs'
-import { recordSongComplete, addFreePlayTime } from '@/data/piano-stats'
+import { recordSongComplete, addFreePlayTime, recordWrongNote } from '@/data/piano-stats'
 
 type Phase = 'tip' | 'listen' | 'play' | 'done'
 type Mode = 'learn' | 'free'
@@ -152,6 +152,7 @@ export default function Piano() {
     setWrongMidi(midi)
     if (wrongTimer.current) window.clearTimeout(wrongTimer.current)
     wrongTimer.current = window.setTimeout(() => setWrongMidi(null), 350)
+    recordWrongNote(midi)
   }
 
   const noteHit = useCallback(() => {

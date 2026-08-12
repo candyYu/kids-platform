@@ -5,7 +5,7 @@ import { S2_LESSONS } from '@/data/s2-lessons'
 import { lessonL05 } from '@/data/lessons'
 import { BADGES } from '@/types'
 import BadgeDisplay from '@/components/BadgeDisplay'
-import { PIANO_SONGS } from '@/data/piano-songs'
+import { PIANO_SONGS, FIVE_KEYS } from '@/data/piano-songs'
 import { loadPianoStats, calcPianoStreak, type PianoStats } from '@/data/piano-stats'
 
 export default function ParentReport() {
@@ -47,6 +47,19 @@ export default function ParentReport() {
   const pianoThisWeek = pianoStats
     ? last7Days.filter(d => pianoStats.practiceDates.includes(d)).length
     : 0
+  // 弹错最多的音：取 top 3，带唱名/指法
+  const topWrongNotes = pianoStats
+    ? Object.entries(pianoStats.wrongNotes)
+        .map(([midiStr, count]) => {
+          const midi = Number(midiStr)
+          const key = FIVE_KEYS.find(k => k.midi === midi)
+          return { midi, count, solfege: key?.solfege ?? '?', finger: key?.finger ?? 0 }
+        })
+        .filter(x => x.count >= 2) // 至少按错 2 次才显示，避免一次性误触
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+    : []
+  const totalWrong = topWrongNotes.reduce((s, x) => s + x.count, 0)
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -150,6 +163,23 @@ export default function ParentReport() {
                 </div>
               ))}
             </div>
+            {topWrongNotes.length > 0 && (
+              <div className="mt-3 p-2.5 bg-amber-50 rounded-xl border border-amber-100">
+                <div className="text-xs font-bold text-amber-700 mb-1.5">🎯 可以多练这几个音（按错次数）</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {topWrongNotes.map(n => (
+                    <span key={n.midi} className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-full text-xs text-amber-700 border border-amber-200">
+                      <span className="font-bold">{n.solfege}</span>
+                      <span className="text-amber-400">{n.finger}指</span>
+                      <span className="text-amber-500 font-bold">×{n.count}</span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-amber-500/80 mt-1.5">
+                  共按错 {totalWrong} 次 · 练熟这几个音，其它的就都简单了
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

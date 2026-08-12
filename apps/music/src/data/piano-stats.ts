@@ -17,6 +17,8 @@ export interface PianoStats {
   freePlaySeconds: number
   /** 有过练习的日期（YYYY-MM-DD，去重），用于打卡 & 连续天数 */
   practiceDates: string[]
+  /** 按 MIDI 音符号聚合的弹错次数（跟弹模式按错键时累计） */
+  wrongNotes: Record<string, number>
   /** 统计版本，未来字段变更用 */
   version: 1
 }
@@ -25,6 +27,7 @@ const EMPTY: PianoStats = {
   songs: {},
   freePlaySeconds: 0,
   practiceDates: [],
+  wrongNotes: {},
   version: 1,
 }
 
@@ -38,6 +41,7 @@ export function loadPianoStats(): PianoStats {
       songs: parsed.songs && typeof parsed.songs === 'object' ? parsed.songs : {},
       freePlaySeconds: Number.isFinite(parsed.freePlaySeconds) ? parsed.freePlaySeconds : 0,
       practiceDates: Array.isArray(parsed.practiceDates) ? parsed.practiceDates : [],
+      wrongNotes: parsed.wrongNotes && typeof parsed.wrongNotes === 'object' ? parsed.wrongNotes : {},
       version: 1,
     }
   } catch {
@@ -79,6 +83,15 @@ export function addFreePlayTime(seconds: number) {
   const stats = loadPianoStats()
   stats.freePlaySeconds += Math.round(seconds)
   markToday(stats)
+  save(stats)
+}
+
+/** 跟弹时按错键：记录是哪个音被按错（不更新练习日期，完成/自由弹才算练习） */
+export function recordWrongNote(midi: number) {
+  if (!Number.isFinite(midi)) return
+  const stats = loadPianoStats()
+  const key = String(midi)
+  stats.wrongNotes[key] = (stats.wrongNotes[key] ?? 0) + 1
   save(stats)
 }
 
