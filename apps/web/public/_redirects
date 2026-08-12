@@ -1,9 +1,0 @@
-# Cloudflare Pages SPA fallback rewrites
-# 任何 /music/* 路径都回退到 /music/index.html
-# 任何 /yuwen/* 路径都回退到 /yuwen/index.html
-# 让 React Router 接住路由
-
-/yuwen /yuwen/index.html 200
-/yuwen/* /yuwen/index.html 200
-/music /music/index.html 200
-/music/* /music/index.html 200
