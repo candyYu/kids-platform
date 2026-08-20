@@ -28,7 +28,10 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 p-6 flex flex-col">
-      <div className="flex justify-end -mt-2 mb-2">
+      <div className="flex justify-end -mt-2 mb-2 gap-2">
+        <Link to="/debug-audio" className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 bg-white/70 border border-orange-300 px-3 py-1.5 rounded-full active:scale-95">
+          🔧 音频诊断
+        </Link>
         <a href="/" className="inline-flex items-center gap-1 text-xs font-bold text-pig-500 bg-white/70 border border-pig-200 px-3 py-1.5 rounded-full active:scale-95">
           🏠 回首页
         </a>
