@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import HomePage from './routes/HomePage'
-import AudioDebugPage from './routes/AudioDebugPage'
 import LessonMapPage from './routes/LessonMapPage'
 import LessonPage from './routes/LessonPage'
 import ErrorBookPage from './routes/ErrorBookPage'
@@ -36,7 +35,6 @@ export default function App() {
       <Route path="/cheatsheet" element={<CheatSheetPage />} />
       <Route path="/poem" element={<PoemList />} />
       <Route path="/poem/:id" element={<PoemReader />} />
-      <Route path="/debug-audio" element={<AudioDebugPage />} />
       <Route path="*" element={<HomePage />} />
     </Routes>
   )

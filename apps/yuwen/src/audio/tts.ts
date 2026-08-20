@@ -139,17 +139,20 @@ import { HANZI_TO_PINYIN } from './hanziMap'
 let speakHanziCheckedSynth = false
 export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<void> {
   console.log('[TTS-speakHanzi] called:', JSON.stringify(text), 'opts:', JSON.stringify(opts))
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    console.warn('[TTS-speakHanzi] speechSynthesis 不可用')
-    return Promise.resolve()
+
+  // 路径 0（最重要）：device 没 Web Speech（部分 WebView / 小度学习平板）→ 强制走 zh-synth 切片
+  // 不再 return，必须把每个音节串成 mp3 链播
+  const hasWebSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window
+  if (!hasWebSpeech) {
+    console.warn('[TTS-speakHanzi] speechSynthesis 不可用，强制走 zh-synth 切片路径')
   }
 
-  // 0. 优先尝试 zh-synth 切片
+  // 0. 优先尝试 zh-synth 切片（先尝试一次，hasWebSpeech 为 false 时这是必走路径）
   if (!speakHanziCheckedSynth) {
     speakHanziCheckedSynth = true
     setTimeout(() => {
-      const zhVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('zh'))
-      console.log('[TTS-speakHanzi] 当前可用中文 voice:', zhVoices.map(v => v.name), 'zh-synth 索引大小:', audioIndex.size)
+      const zhVoices = hasWebSpeech ? window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('zh')) : []
+      console.log('[TTS-speakHanzi] 可用中文 voice:', zhVoices.map(v => v.name), 'zh-synth 索引大小:', audioIndex.size)
     }, 500)
   }
 
@@ -170,6 +173,13 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
   // 由于汉字→拼音需要拼音表（这里没有），采用 fallback：
   // - 如果 audioIndex 包含 '大' '马' 的某种索引形式，就用切片
   // - 否则走 Web Speech
+
+  // 没有 Web Speech 且走不到切片：直接蜂鸣兜底（不再走 speakHanzi 死循环）
+  if (!hasWebSpeech) {
+    console.warn('[TTS-speakHanzi] 没 Web Speech 且没找到切片，降级蜂鸣:', text)
+    beepFallback()
+    return Promise.resolve()
+  }
 
   return new Promise<void>((resolve) => {
     try {
