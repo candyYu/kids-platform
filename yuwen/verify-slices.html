@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>音频切片核对 - 全13课</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; padding: 20px; max-width: 1400px; margin: 0 auto; background: #FFFAF0; }
+  h1 { color: #FF4781; text-align: center; margin-bottom: 8px; }
+  .tip { background: #fff3cd; padding: 12px 16px; border-radius: 10px; margin: 12px 0; font-size: 14px; line-height: 1.6; }
+  .tip b { color: #d63384; }
+  .lesson { background: white; border-radius: 14px; padding: 18px 22px; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .lesson h2 { color: #FF4781; margin: 0 0 12px; font-size: 22px; border-bottom: 2px dashed #FFD0E0; padding-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #f1e8e8; }
+  th { color: #888; font-weight: 600; font-size: 13px; }
+  td.pinyin { font-size: 24px; font-weight: bold; color: #333; width: 80px; font-family: "Helvetica Neue", sans-serif; }
+  td.file { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: #666; }
+  td.note { color: #999; font-size: 13px; }
+  button.play {
+    background: #FF4781; color: white; border: none; padding: 6px 14px;
+    border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;
+  }
+  button.play:hover { background: #e63d72; }
+  button.play.playing { background: #4CAF50; }
+  .status-ok { color: #2e7d32; font-weight: bold; }
+  .status-bad { color: #c62828; font-weight: bold; }
+  .status-unknown { color: #888; }
+  .row-flag { padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 4px; }
+  .flag-warn { background: #fff3cd; color: #856404; }
+  .jump-link { font-size: 13px; margin-left: 10px; color: #FF4781; }
+</style>
+</head>
+<body>
+<h1>🎵 音频切片核对表（全 13 课）</h1>
+<div class="tip">
+  <b>用法：</b> 每一行就是 <code>audioMap.ts</code> 里现有的「拼音 → 切片」映射。<br>
+  点 ▶ 播放按钮听声音，如果跟你记忆中的拼音<b>对不上</b>，告诉我：<b>哪一课 / 哪个拼音 / 它实际听起来像什么</b>。<br>
+  例：「L07 声母 c 实际是 z」「L08 整体认读 zhi 听起来是 zi」<br>
+  <span class="status-bad">红色</span> = 我自己标的可疑项，<span class="status-ok">绿色</span> = 长度看起来合理。
+</div>
+
+<div id="root"></div>
+
+<script>
+// 当前 audioMap.ts 的内容（脚本里复制一份，避免运行时去读 .ts）
+const MAP = {
+  L01: [
+    { pinyin: 'ā', file: 'l01/slice_12.mp3', note: '' },
+    { pinyin: 'á', file: 'l01/slice_14.mp3', note: '' },
+    { pinyin: 'ǎ', file: 'l01/slice_16.mp3', note: '' },
+    { pinyin: 'à', file: 'l01/slice_18.mp3', note: '' },
+    { pinyin: 'ō', file: 'l01/slice_19.mp3', note: '' },
+    { pinyin: 'ó', file: 'l01/slice_21.mp3', note: '' },
+    { pinyin: 'ǒ', file: 'l01/slice_23.mp3', note: '' },
+    { pinyin: 'ò', file: 'l01/slice_25.mp3', note: '' },
+    { pinyin: 'ē', file: 'l01/slice_27.mp3', note: '' },
+    { pinyin: 'é', file: 'l01/slice_29.mp3', note: '' },
+    { pinyin: 'ě', file: 'l01/slice_31.mp3', note: '' },
+    { pinyin: 'è', file: 'l01/slice_33.mp3', note: '' },
+  ],
+  L02: [
+    { pinyin: 'ī', file: 'l02/slice_05.mp3', note: '' },
+    { pinyin: 'í', file: 'l02/slice_14.mp3', note: '' },
+    { pinyin: 'ǐ', file: 'l02/slice_16.mp3', note: '' },
+    { pinyin: 'ì', file: 'l02/slice_18.mp3', note: '' },
+    { pinyin: 'ū', file: 'l02/slice_20.mp3', note: '' },
+    { pinyin: 'ú', file: 'l02/slice_22.mp3', note: '' },
+    { pinyin: 'ǔ', file: 'l02/slice_24.mp3', note: '' },
+    { pinyin: 'ù', file: 'l02/slice_26.mp3', note: '' },
+    { pinyin: 'ǖ', file: 'l02/slice_28.mp3', note: '' },
+    { pinyin: 'ǘ', file: 'l02/slice_30.mp3', note: '' },
+    { pinyin: 'ǚ', file: 'l02/slice_32.mp3', note: '' },
+    { pinyin: 'ǜ', file: 'l02/slice_34.mp3', note: '' },
+    { pinyin: 'y', file: 'l02/slice_37.mp3', note: '' },
+    { pinyin: 'w', file: 'l02/slice_39.mp3', note: '' },
+    { pinyin: 'yi', file: 'l02/slice_38.mp3', note: '' },
+    { pinyin: 'wu', file: 'l02/slice_40.mp3', note: '' },
+    { pinyin: 'yu', file: 'l02/slice_41.mp3', note: '' },
+  ],
+  L03: [
+    { pinyin: 'b', file: 'l03/slice_05.mp3', note: '' },
+    { pinyin: 'p', file: 'l03/slice_13.mp3', note: '' },
+    { pinyin: 'm', file: 'l03/slice_15.mp3', note: '' },
+    { pinyin: 'f', file: 'l03/slice_17.mp3', note: '' },
+  ],
+  L04: [
+    { pinyin: 'd', file: 'l04/slice_05.mp3', note: '' },
+    { pinyin: 't', file: 'l04/slice_06.mp3', note: '' },
+    { pinyin: 'n', file: 'l04/slice_08.mp3', note: '' },
+    { pinyin: 'l', file: 'l04/slice_18.mp3', note: '' },
+  ],
+  L05: [
+    { pinyin: 'g', file: 'l05/slice_11.mp3', note: '' },
+    { pinyin: 'k', file: 'l05/slice_12.mp3', note: '' },
+    { pinyin: 'h', file: 'l05/slice_13.mp3', note: '' },
+  ],
+  L06: [
+    { pinyin: 'j', file: 'l06/slice_05.mp3', note: '' },
+    { pinyin: 'q', file: 'l06/slice_06.mp3', note: '' },
+    { pinyin: 'x', file: 'l06/slice_07.mp3', note: '' },
+  ],
+  L07: [
+    { pinyin: 'z', file: 'l07/slice_05.mp3', note: '' },
+    { pinyin: 'c', file: 'l07/slice_06.mp3', note: '' },
+    { pinyin: 's', file: 'l07/slice_07.mp3', note: '' },
+    { pinyin: 'zi', file: 'l07/slice_18.mp3', note: '' },
+    { pinyin: 'ci', file: 'l07/slice_19.mp3', note: '' },
+    { pinyin: 'si', file: 'l07/slice_21.mp3', note: '' },
+  ],
+  L08: [
+    { pinyin: 'zh', file: 'l08/slice_05.mp3', note: '' },
+    { pinyin: 'ch', file: 'l08/slice_06.mp3', note: '' },
+    { pinyin: 'sh', file: 'l08/slice_07.mp3', note: '' },
+    { pinyin: 'r', file: 'l08/slice_20.mp3', note: '' },
+    { pinyin: 'zhi', file: 'l08/slice_21.mp3', note: '' },
+    { pinyin: 'chi', file: 'l08/slice_22.mp3', note: '' },
+    { pinyin: 'shi', file: 'l08/slice_24.mp3', note: '' },
+    { pinyin: 'ri', file: 'l08/slice_26.mp3', note: '' },
+  ],
+  L09: [
+    { pinyin: 'ai', file: 'l09/slice_05.mp3', note: '' },
+    { pinyin: 'ei', file: 'l09/slice_06.mp3', note: '' },
+    { pinyin: 'ui', file: 'l09/slice_07.mp3', note: '' },
+  ],
+  L10: [
+    { pinyin: 'ao', file: 'l10/slice_05.mp3', note: '' },
+    { pinyin: 'ou', file: 'l10/slice_06.mp3', note: '' },
+    { pinyin: 'iu', file: 'l10/slice_07.mp3', note: '' },
+  ],
+  L11: [
+    { pinyin: 'ie', file: 'l11/slice_05.mp3', note: '' },
+    { pinyin: 'üe', file: 'l11/slice_06.mp3', note: '' },
+    { pinyin: 'er', file: 'l11/slice_07.mp3', note: '' },
+  ],
+  L12: [
+    { pinyin: 'an', file: 'l12/slice_05.mp3', note: '' },
+    { pinyin: 'en', file: 'l12/slice_06.mp3', note: '' },
+    { pinyin: 'in', file: 'l12/slice_07.mp3', note: '' },
+    { pinyin: 'un', file: 'l12/slice_08.mp3', note: '' },
+    { pinyin: 'ün', file: 'l12/slice_09.mp3', note: '' },
+  ],
+  L13: [
+    { pinyin: 'ang', file: 'l13/slice_05.mp3', note: '' },
+    { pinyin: 'eng', file: 'l13/slice_06.mp3', note: '' },
+    { pinyin: 'ing', file: 'l13/slice_07.mp3', note: '' },
+    { pinyin: 'ong', file: 'l13/slice_08.mp3', note: '' },
+  ],
+}
+
+// 我自己根据「典型错位规律」预先标出的可疑项（用户可忽略）
+// 这些是基于「连续切片一般是同字母不同声调」「声母 n/l 容易混」等启发式标出
+const SUSPECT = new Set([
+  'L04:n',  // 声母 n 和 l 在某些录音里容易混
+  'L07:z',  // z/c/s 连续切片容易错位
+  'L07:c',
+  'L07:s',
+  'L08:zh', // zh/ch/sh 容易错
+  'L08:ch',
+  'L08:sh',
+  'L08:zhi', // 整体认读 zhi/chi/shi 容易和声母 zh/ch/sh 串
+  'L08:chi',
+  'L08:shi',
+  'L11:er', // 特殊韵母 er 位置容易标错
+])
+
+let currentAudio = null
+let currentBtn = null
+
+function playSlice(file, btn) {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null }
+  if (currentBtn) { currentBtn.classList.remove('playing'); currentBtn = null }
+  currentAudio = new Audio(`/audio/slices/${file}`)
+  currentAudio.play()
+  btn.classList.add('playing')
+  currentBtn = btn
+  currentAudio.onended = () => {
+    btn.classList.remove('playing')
+    currentBtn = null
+    currentAudio = null
+  }
+}
+
+function render() {
+  const root = document.getElementById('root')
+  let html = ''
+  for (const [lesson, items] of Object.entries(MAP)) {
+    html += `<div class="lesson"><h2>${lesson} <span style="font-weight:400;font-size:14px;color:#888;">${items.length} 个映射</span><a class="jump-link" href="#${lesson}">#</a></h2>`
+    html += `<table><thead><tr><th>拼音</th><th>切片文件</th><th>说明</th><th>听</th></tr></thead><tbody>`
+    for (const it of items) {
+      const key = `${lesson}:${it.pinyin}`
+      const suspect = SUSPECT.has(key)
+      html += `<tr id="${key}">
+        <td class="pinyin">${it.pinyin}</td>
+        <td class="file">${it.file}</td>
+        <td class="note">${it.note}${suspect ? ' <span class="row-flag flag-warn">可疑</span>' : ''}</td>
+        <td><button class="play" onclick="playSlice('${it.file}', this)">▶ 播放</button></td>
+      </tr>`
+    }
+    html += `</tbody></table></div>`
+  }
+  root.innerHTML = html
+}
+render()
+
+// 快捷键：上下方向键切换行
+let currentFocus = null
+document.addEventListener('keydown', (e) => {
+  if (!['ArrowUp', 'ArrowDown', ' '].includes(e.key)) return
+  e.preventDefault()
+  const rows = Array.from(document.querySelectorAll('tr[id]'))
+  if (!rows.length) return
+  if (!currentFocus) currentFocus = rows[0]
+  const idx = rows.indexOf(currentFocus)
+  if (e.key === 'ArrowDown' && idx < rows.length - 1) currentFocus = rows[idx + 1]
+  if (e.key === 'ArrowUp' && idx > 0) currentFocus = rows[idx - 1]
+  if (e.key === ' ') {
+    const btn = currentFocus.querySelector('button.play')
+    if (btn) btn.click()
+  }
+  currentFocus.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  rows.forEach(r => r.style.background = '')
+  currentFocus.style.background = '#FFF5F7'
+})
+</script>
+</body>
+</html>

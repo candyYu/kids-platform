@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>音频时间戳标注工具 - L01 a o e</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #FFFAF0; }
+  h1 { color: #FF4781; text-align: center; }
+  .audio-player { width: 100%; margin: 20px 0; }
+  .time-display { font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0; font-family: monospace; }
+  .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+  button { font-size: 16px; padding: 12px 24px; border-radius: 12px; border: 0; cursor: pointer; font-weight: bold; }
+  .btn-play { background: #FF4781; color: white; }
+  .btn-mark { background: #FFCC00; color: #333; }
+  .btn-test { background: #4CAF50; color: white; }
+  .btn-export { background: #2196F3; color: white; }
+  .marks { margin-top: 30px; }
+  .mark-item { background: white; padding: 15px; margin: 10px 0; border-radius: 12px; display: flex; align-items: center; gap: 15px; }
+  .mark-time { font-family: monospace; font-size: 18px; color: #FF4781; min-width: 100px; }
+  .mark-input { flex: 1; padding: 8px 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; }
+  .mark-input:focus { border-color: #FF4781; outline: none; }
+  .hint { background: #fff3cd; padding: 15px; border-radius: 12px; margin: 20px 0; }
+  .output { background: #f5f5f5; padding: 15px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; margin-top: 20px; }
+</style>
+</head>
+<body>
+<h1>🎧 L01 - a o e 音频标注工具</h1>
+
+<div class="hint">
+  <strong>使用说明：</strong><br>
+  1. 点击「播放」听音频<br>
+  2. 听到某个拼音开始时，点击「标记起点」<br>
+  3. 听到该拼音结束时，点击「标记终点」<br>
+  4. 填写拼音（如 "ā", "á", "ǒ", "è"）<br>
+  5. 最后导出 JSON 代码
+</div>
+
+<div class="time-display" id="currentTime">0.00 秒</div>
+
+<audio id="audio" class="audio-player" controls src="/audio/lessons/l01.mp3"></audio>
+
+<div class="controls">
+  <button class="btn-play" onclick="togglePlay()">▶ 播放 / ⏸ 暂停</button>
+  <button class="btn-mark" onclick="markStart()">📍 标记起点</button>
+  <button class="btn-mark" onclick="markEnd()">🏁 标记终点</button>
+  <button class="btn-test" onclick="testSegment()">🔊 试听当前区间</button>
+  <button class="btn-export" onclick="exportJSON()">📤 导出 JSON</button>
+</div>
+
+<div class="marks" id="marksList">
+  <!-- 标记项会在这里动态生成 -->
+</div>
+
+<div class="output" id="output" style="display: none;"></div>
+
+<script>
+const audio = document.getElementById('audio')
+const timeDisplay = document.getElementById('currentTime')
+const marksList = document.getElementById('marksList')
+
+let marks = []
+let pendingStart = null
+
+// 更新时间显示
+audio.addEventListener('timeupdate', () => {
+  timeDisplay.textContent = audio.currentTime.toFixed(2) + ' 秒'
+})
+
+function togglePlay() {
+  if (audio.paused) audio.play()
+  else audio.pause()
+}
+
+function markStart() {
+  pendingStart = audio.currentTime
+  alert('已标记起点: ' + pendingStart.toFixed(2) + 's\n请继续播放，听到结束时点「标记终点」')
+}
+
+function markEnd() {
+  if (pendingStart === null) {
+    alert('请先标记起点！')
+    return
+  }
+  const end = audio.currentTime
+  marks.push({
+    start: pendingStart,
+    end: end,
+    pinyin: '',
+    note: ''
+  })
+  pendingStart = null
+  renderMarks()
+}
+
+function renderMarks() {
+  marksList.innerHTML = marks.map((m, i) => `
+    <div class="mark-item">
+      <div class="mark-time">${m.start.toFixed(2)} - ${m.end.toFixed(2)}</div>
+      <input class="mark-input" type="text" placeholder="拼音，如：ā" 
+             value="${m.pinyin}" 
+             onchange="marks[${i}].pinyin = this.value">
+      <input class="mark-input" type="text" placeholder="备注" 
+             value="${m.note}" 
+             onchange="marks[${i}].note = this.value">
+      <button onclick="playMark(${i})">🔊</button>
+      <button onclick="removeMark(${i})">❌</button>
+    </div>
+  `).join('')
+}
+
+function playMark(i) {
+  const m = marks[i]
+  audio.currentTime = m.start
+  audio.play()
+  setTimeout(() => audio.pause(), (m.end - m.start) * 1000 + 100)
+}
+
+function removeMark(i) {
+  marks.splice(i, 1)
+  renderMarks()
+}
+
+function testSegment() {
+  if (pendingStart === null) {
+    alert('先点「标记起点」，再点这个试听')
+    return
+  }
+  audio.currentTime = pendingStart
+  audio.play()
+}
+
+function exportJSON() {
+  const output = document.getElementById('output')
+  output.style.display = 'block'
+  
+  const json = marks.filter(m => m.pinyin).map(m => `  {
+    pinyin: '${m.pinyin}',
+    src: '/audio/lessons/l01.mp3',
+    start: ${m.start.toFixed(2)},
+    end: ${m.end.toFixed(2)},
+    note: '${m.note}'
+  }`).join(',\n')
+  
+  output.textContent = `// L01: a o e 时间戳
+export const L01_AUDIO: AudioSlice[] = [
+${json}
+]`
+}
+</script>
+</body>
+</html>

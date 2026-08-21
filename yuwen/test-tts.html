@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Test TTS</title></head>
+<body>
+<h1>点下面的按钮听声音</h1>
+<button onclick="test()">点我听</button>
+<script>
+function test() {
+  const u = new SpeechSynthesisUtterance('你好世界')
+  u.lang = 'zh-CN'
+  u.rate = 1.0
+  u.volume = 1.0
+  u.pitch = 1.0
+  speechSynthesis.cancel()
+  speechSynthesis.speak(u)
+}
+</script>
+</body>
+</html>

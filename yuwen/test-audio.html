@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Test Audio</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 40px; text-align: center; background: #FFFAF0; }
+  button { font-size: 24px; padding: 20px 40px; margin: 10px; border-radius: 20px; border: 0; background: #FF4781; color: white; cursor: pointer; }
+  audio { width: 100%; max-width: 600px; margin-top: 30px; }
+  .ok { color: green; font-weight: bold; font-size: 32px; }
+</style>
+</head>
+<body>
+<h1>音频播放测试</h1>
+<p>如果听到"啊"等单字朗读，就是 kids-yuwen 抽的视频原声。</p>
+<button onclick="document.getElementById('a').play()">▶ 播放 L01 完整音轨（4分钟）</button>
+<br>
+<button onclick="playShort()">▶ 播一段（5秒后停止）</button>
+<br>
+<div class="ok" id="status"></div>
+<audio id="a" src="/audio/lessons/l01.mp3" controls></audio>
+<script>
+function playShort() {
+  const a = document.getElementById('a')
+  a.currentTime = 5
+  a.play()
+  document.getElementById('status').textContent = '▶ 正在播（从5秒开始）'
+  setTimeout(() => {
+    a.pause()
+    document.getElementById('status').textContent = '⏸ 停（你应该听到老师念前几秒的拼音）'
+  }, 3000)
+}
+</script>
+</body>
+</html>

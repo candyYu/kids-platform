@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>L01 音频时间戳验证</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; background: #FFFAF0; }
+  h1 { color: #FF4781; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 30px 0; }
+  .pinyin-btn { 
+    padding: 30px 20px; 
+    font-size: 36px; 
+    border-radius: 16px; 
+    border: 3px solid #FF4781; 
+    background: white; 
+    cursor: pointer;
+    font-weight: bold;
+    color: #FF4781;
+    transition: all 0.1s;
+  }
+  .pinyin-btn:hover { background: #FF4781; color: white; }
+  .pinyin-btn:active { transform: scale(0.95); }
+  .pinyin-btn.playing { background: #4CAF50; border-color: #4CAF50; color: white; }
+  .note { font-size: 14px; color: #666; text-align: center; margin-top: 5px; }
+  .section { margin: 40px 0; }
+  .section h2 { color: #FFCC00; font-size: 24px; }
+  .hint { background: #fff3cd; padding: 15px; border-radius: 12px; margin: 20px 0; }
+  audio { width: 100%; margin: 20px 0; }
+</style>
+</head>
+<body>
+<h1>🔊 L01 音频时间戳验证</h1>
+
+<div class="hint">
+  <strong>说明：</strong> 点击每个拼音按钮，听听看是否播对了。如果不对，去 annotate-audio.html 重新标注时间，然后更新 audioMap.ts。
+</div>
+
+<audio controls src="/audio/lessons/l01.mp3"></audio>
+
+<div class="section">
+  <h2>a - 啊</h2>
+  <div class="grid">
+    <button class="pinyin-btn" data-pinyin="ā">ā<div class="note">2.28 - 3.05s</div></button>
+    <button class="pinyin-btn" data-pinyin="á">á<div class="note">3.84 - 5.17s</div></button>
+    <button class="pinyin-btn" data-pinyin="ǎ">ǎ<div class="note">5.73 - 6.42s</div></button>
+    <button class="pinyin-btn" data-pinyin="à">à<div class="note">8.21 - 9.54s</div></button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>o - 哦</h2>
+  <div class="grid">
+    <button class="pinyin-btn" data-pinyin="ō">ō<div class="note">10.31 - 11.00s</div></button>
+    <button class="pinyin-btn" data-pinyin="ó">ó<div class="note">11.26 - 12.00s</div></button>
+    <button class="pinyin-btn" data-pinyin="ǒ">ǒ<div class="note">12.29 - 13.00s</div></button>
+    <button class="pinyin-btn" data-pinyin="ò">ò<div class="note">15.91 - 17.06s</div></button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>e - 鹅</h2>
+  <div class="grid">
+    <button class="pinyin-btn" data-pinyin="ē">ē<div class="note">20.11 - 21.53s</div></button>
+    <button class="pinyin-btn" style="opacity: 0.4">é<div class="note">待标注</div></button>
+    <button class="pinyin-btn" style="opacity: 0.4">ě<div class="note">待标注</div></button>
+    <button class="pinyin-btn" style="opacity: 0.4">è<div class="note">待标注</div></button>
+  </div>
+</div>
+
+<script>
+// 时间戳映射表（和 audioMap.ts 保持同步）
+// 请先去 annotate-audio.html 标注，然后把时间填到这里
+const AUDIO_MAP = {
+  // 'ā': { start: 2.5, end: 3.2 },
+  // 'á': { start: 4.0, end: 5.0 },
+  // ...
+}
+
+const audio = document.querySelector('audio')
+const buttons = document.querySelectorAll('.pinyin-btn')
+
+let stopCheck = null
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pinyin = btn.dataset.pinyin
+    if (!pinyin) return
+    
+    const slice = AUDIO_MAP[pinyin]
+    if (!slice) {
+      alert('还没标注这个拼音')
+      return
+    }
+    
+    // 清除上一个的检查
+    if (stopCheck) clearInterval(stopCheck)
+    
+    // 重置所有按钮样式
+    buttons.forEach(b => b.classList.remove('playing'))
+    btn.classList.add('playing')
+    
+    // 播切片
+    audio.currentTime = slice.start
+    audio.play()
+    
+    // 到点暂停
+    stopCheck = setInterval(() => {
+      if (audio.currentTime >= slice.end) {
+        audio.pause()
+        clearInterval(stopCheck)
+        btn.classList.remove('playing')
+      }
+    }, 50)
+  })
+})
+
+audio.addEventListener('pause', () => {
+  buttons.forEach(b => b.classList.remove('playing'))
+  if (stopCheck) {
+    clearInterval(stopCheck)
+    stopCheck = null
+  }
+})
+</script>
+</body>
+</html>
