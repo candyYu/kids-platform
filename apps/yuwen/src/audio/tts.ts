@@ -164,7 +164,13 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
     const allFound = syls.every(s => audioIndex.has(s.normalize('NFC')) || audioIndex.has(s.normalize('NFD')))
     if (allFound) {
       console.log('[TTS-speakHanzi] 走 zh-synth 切片:', pinyin)
-      return syls.reduce((p, s) => p.then(() => speakPinyin(s)), Promise.resolve())
+      // 串行 + 间隔 350ms，避免 mp3 抢断听不清
+      return (async () => {
+        for (const s of syls) {
+          await speakPinyin(s)
+          await new Promise(r => setTimeout(r, 350))
+        }
+      })()
     }
     console.log('[TTS-speakHanzi] 切片不全', pinyin, '，fallback Web Speech')
   }
@@ -296,13 +302,20 @@ function beepFallback() {
 }
 
 // ============== 播放一个独立音频文件 ==============
+// audioMap 里硬编码的 file 是 '/audio/...' 绝对路径，但在子应用部署下需要拼 base（/yuwen/）
+// 否则 dev/prod 都会 404 'no supported sources'
+// 同一文件加 base 后作为 cache key，避免重复 new Audio
 export function playFile(file: string): Promise<void> {
+  // import.meta.env.BASE_URL 在 dev 和 build 都是 '/yuwen/'（yuwen 的 vite.config.ts base）
+  const fullUrl = file.startsWith('http') || file.startsWith('//')
+    ? file
+    : `${import.meta.env.BASE_URL.replace(/\/$/, '')}${file.startsWith('/') ? file : '/' + file}`
   return new Promise((resolve) => {
     stopAudio()
-    let a = audioCache.get(file)
+    let a = audioCache.get(fullUrl)
     if (!a) {
-      a = new Audio(file)
-      audioCache.set(file, a)
+      a = new Audio(fullUrl)
+      audioCache.set(fullUrl, a)
     }
     currentAudio = a
     const onEnded = () => {
@@ -312,7 +325,7 @@ export function playFile(file: string): Promise<void> {
     }
     a.addEventListener('ended', onEnded)
     a.play().catch((err) => {
-      console.warn('[Audio] play failed', err)
+      console.warn('[Audio] play failed', err, 'url:', fullUrl)
       resolve()
     })
   })

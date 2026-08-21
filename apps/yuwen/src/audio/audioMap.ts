@@ -193,7 +193,7 @@ async function loadSynthIndex(): Promise<void> {
   // 改用 fetcher：列出文件名（用 Vite import.meta.glob 不行，因为路径不能含中文）
   // 干脆：硬编码扫描所有拼音文件名（启动时一次性读）
   try {
-    const res = await fetch('/audio/synth-index.json')
+    const res = await fetch(`${import.meta.env.BASE_URL}audio/synth-index.json`)
     if (res.ok) {
       const list: string[] = await res.json()
       let count = 0

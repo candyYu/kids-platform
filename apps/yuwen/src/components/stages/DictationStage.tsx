@@ -76,8 +76,14 @@ export function DictationStage({ lesson, onComplete }: Props) {
       const is4ToneChain = syls.length >= 3 && syls.every(s => /^[a-zA-Z\u0100-\u017F]+$/.test(s) && s.length <= 2)
       speakTimer.current = setTimeout(() => {
         if (is4ToneChain) {
-          // 4 声调链：按顺序读每个拼音（speakPinyin 找不到切片时 fallback 到 speakHanzi(desc)）
-          void Promise.all(syls.map(s => speakPinyin(s, { fallbackHanzi: desc }))).catch(() => {})
+          // 4 声调链：按顺序串行读每个拼音（speakPinyin 找不到切片时 fallback 到 speakHanzi(desc)）
+          // 串行 + 间隔 350ms，避免 mp3 抢断（之前 Promise.all 并行 → 只能听到最后一个音）
+          void (async () => {
+            for (const s of syls) {
+              await speakPinyin(s, { fallbackHanzi: desc })
+              await new Promise(r => setTimeout(r, 350))
+            }
+          })()
         } else if (desc) {
           speakHanzi(desc)
         } else {
