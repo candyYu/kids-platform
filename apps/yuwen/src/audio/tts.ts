@@ -9,7 +9,9 @@ import {
   L11_AUDIO, L12_AUDIO, L13_AUDIO
 } from './audioMap'
 
-const audioCache = new Map<string, HTMLAudioElement>()
+// 当前正在播放的 audio（用于 stopAudio 中断）
+// 不再缓存 audio 实例（playFile 每次 new Audio），避免 android webview 的 ended→play 静默忽略 bug
+// 见 playFile 注释
 let currentAudio: HTMLAudioElement | null = null
 
 // ============== 路径 A：拼音切片索引 ==============
@@ -187,6 +189,15 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
     return Promise.resolve()
   }
 
+  // 有 Web Speech 但没 voice（android 系统 TTS 未装/无中文 voice）→ 立即蜂鸣，不阻塞 Promise
+  // 避免按钮一直显示"⏸ 停"等 3s 超时
+  const initialVoice = pickChineseVoice()
+  if (!initialVoice) {
+    console.warn('[TTS-speakHanzi] 没找到中文 voice（系统 TTS 未装/无中文包），蜂鸣兜底:', text)
+    beepFallback()
+    return Promise.resolve()
+  }
+
   return new Promise<void>((resolve) => {
     try {
       window.speechSynthesis.cancel()
@@ -304,29 +315,39 @@ function beepFallback() {
 // ============== 播放一个独立音频文件 ==============
 // audioMap 里硬编码的 file 是 '/audio/...' 绝对路径，但在子应用部署下需要拼 base（/yuwen/）
 // 否则 dev/prod 都会 404 'no supported sources'
-// 同一文件加 base 后作为 cache key，避免重复 new Audio
+//
+// Pitfall: 同一 file 多次调用时**不复用** HTMLAudioElement 实例
+// - 原因：android webview（包括小度/华为平板的 WebView）在 audio.ended 后再次 .play()
+//   会静默忽略（src 不变、currentTime 还在末尾、w3c spec 允许浏览器这样做）
+// - 后果：连续 3 个相同音节（如"鹅鹅鹅"）只能听到第 1 个
+// - 修复：每次都 new Audio()，避免触发这个 spec 边界
+// mp3 切片都很小（<12KB），new 的开销可忽略
 export function playFile(file: string): Promise<void> {
-  // import.meta.env.BASE_URL 在 dev 和 build 都是 '/yuwen/'（yuwen 的 vite.config.ts base）
   const fullUrl = file.startsWith('http') || file.startsWith('//')
     ? file
     : `${import.meta.env.BASE_URL.replace(/\/$/, '')}${file.startsWith('/') ? file : '/' + file}`
   return new Promise((resolve) => {
     stopAudio()
-    let a = audioCache.get(fullUrl)
-    if (!a) {
-      a = new Audio(fullUrl)
-      audioCache.set(fullUrl, a)
-    }
+    const a = new Audio(fullUrl)
     currentAudio = a
     const onEnded = () => {
-      a!.removeEventListener('ended', onEnded)
+      a.removeEventListener('ended', onEnded)
+      a.removeEventListener('error', onError)
+      if (currentAudio === a) currentAudio = null
+      resolve()
+    }
+    const onError = (e: Event | string) => {
+      console.warn('[Audio] play error', e, 'url:', fullUrl)
+      a.removeEventListener('ended', onEnded)
+      a.removeEventListener('error', onError)
       if (currentAudio === a) currentAudio = null
       resolve()
     }
     a.addEventListener('ended', onEnded)
+    a.addEventListener('error', onError)
     a.play().catch((err) => {
       console.warn('[Audio] play failed', err, 'url:', fullUrl)
-      resolve()
+      onError(err)
     })
   })
 }
