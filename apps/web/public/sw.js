@@ -1,6 +1,8 @@
 // 简单的 service worker：缓存 app shell，离线也能打开
 // 策略：HTML 用 network-first（保证更新）；静态资源用 cache-first（加速）
-const CACHE = 'kids-platform-v1';
+// 缓存版本：build 时由 vite.config.ts 自动注入时间戳（每次 build 都变）
+// 变了就触发 activate 里 caches.delete(k) 把旧的全清掉，下次打开拿新代码
+const CACHE = 'kids-platform-v__BUILD_ID__';
 const SHELL = [
   '/',
   '/index.html',
