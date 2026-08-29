@@ -92,6 +92,11 @@ export default function App() {
       {error && (
         <p className="text-chili-500 mt-6 text-sm font-bold">密码不对，再试一次～</p>
       )}
+
+      {/* 版本号（debug 友好：方便确认当前加载的是哪个 build） */}
+      <p className="text-[10px] text-pig-400/60 mt-6 font-mono select-all" title={`build id: ${import.meta.env.VITE_BUILD_ID}`}>
+        {import.meta.env.VITE_BUILD_ID === 'dev' ? 'dev' : `v${(import.meta.env.VITE_BUILD_ID || '').slice(0, 10)}`}
+      </p>
     </main>
   )
 }

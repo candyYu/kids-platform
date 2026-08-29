@@ -1,9 +1,12 @@
 // 古诗阅读组件：单首展示 + 听音 + 释义 + 上一首/下一首
+// 听音走 playPoemLine（预生成整句 mp3），不依赖 Web Speech
+// 原因：pad/小度 WebView 没中文 voice + 切片 cache 复用 bug 让"鹅鹅鹅"前 3 个字后断音
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { POEMS, getPoemById, getPoemsByGrade, type Poem } from '@/data/poems'
-import { speakPinyin, speakHanzi } from '@/audio/tts'
+import { playPoemLine } from '@/audio/tts'
 import { Icon } from '@/components/icons/Icon'
+import { BuildBadge } from '@/components/BuildBadge'
 
 export default function PoemReader() {
   const { id } = useParams<{ id?: string }>()
@@ -41,61 +44,35 @@ export default function PoemReader() {
   const prev = idx > 0 ? POEMS[idx - 1] : null
   const next = idx < POEMS.length - 1 ? POEMS[idx + 1] : null
 
-  // 朗读整行：切片逐字播 + 字间 0 停顿 + 整体紧凑（像"一句话"不像"拼读"）
-  // 用 Edge TTS 预生成切片（声调准，鹅=2声正确）
+  // 朗读单行：直接播预生成整句 mp3（自然连贯 + 不依赖 Web Speech）
   const speakLine = async (line: Poem['lines'][number], lineIdx: number) => {
     setActiveLine(lineIdx)
     setActiveChar(-1)
-    const charsOnly = line.chars.split('').filter(c => /[\u4e00-\u9fa5]/.test(c))
-    const pinyinTokens = line.pinyin.split(/\s+/).filter(Boolean)
-    for (let i = 0; i < charsOnly.length; i++) {
-      if (stopRef.current) {
-        setActiveLine(null)
-        setActiveChar(-1)
-        return
-      }
-      setActiveChar(i)
-      try {
-        if (pinyinTokens[i]) await speakPinyin(pinyinTokens[i])
-        else await speakHanzi(charsOnly[i])
-      } catch { /* 忽略 */ }
-      // 字间 0 停顿（切片本身 0.4s，气口自然）
-    }
+    try {
+      await playPoemLine(poem.id, lineIdx + 1)
+    } catch { /* 忽略 */ }
     setActiveLine(null)
     setActiveChar(-1)
   }
 
-  // 朗读整首：所有字切片逐个播 + 0 停顿 + 行间 250ms 短停顿（连贯自然 + 声调准）
+  // 朗读整首：逐行播 mp3 + 行间 300ms 短停顿
   const speakAll = async () => {
     if (isPlayingAll) {
       stopRef.current = true
       setIsPlayingAll(false)
-      try { window.speechSynthesis?.cancel() } catch {}
       return
     }
     stopRef.current = false
     setIsPlayingAll(true)
     for (let lineIdx = 0; lineIdx < poem.lines.length; lineIdx++) {
       if (stopRef.current) break
-      const line = poem.lines[lineIdx]
       setActiveLine(lineIdx)
-      const charsOnly = line.chars.split('').filter(c => /[\u4e00-\u9fa5]/.test(c))
-      const pinyinTokens = line.pinyin.split(/\s+/).filter(Boolean)
-      for (let i = 0; i < charsOnly.length; i++) {
-        if (stopRef.current) {
-          setActiveLine(null)
-          setActiveChar(-1)
-          return
-        }
-        setActiveChar(i)
-        try {
-          if (pinyinTokens[i]) await speakPinyin(pinyinTokens[i])
-          else await speakHanzi(charsOnly[i])
-        } catch { /* 忽略 */ }
-      }
-      // 行间 250ms 短停顿（让"句"感分明）
-      if (lineIdx < poem.lines.length - 1) {
-        await new Promise(r => setTimeout(r, 250))
+      try {
+        await playPoemLine(poem.id, lineIdx + 1)
+      } catch { /* 忽略 */ }
+      // 行间 300ms 短停顿（让"句"感分明）
+      if (lineIdx < poem.lines.length - 1 && !stopRef.current) {
+        await new Promise(r => setTimeout(r, 300))
       }
     }
     setIsPlayingAll(false)
@@ -103,45 +80,49 @@ export default function PoemReader() {
     setActiveChar(-1)
   }
 
-  // 点单字读
-  const speakChar = async (char: string, pinyin: string) => {
+  // 点单字读：找到这个字属于哪一行，播整行 mp3（mp3 切到这行时这字正在读）
+  // 不再单独播字（避免再陷"单字 mp3 没有 + Web Speech 没 voice"问题）
+  const speakChar = async (char: string, _pinyin: string, lineIdx: number) => {
     try {
-      if (pinyin) await speakPinyin(pinyin)
-      else await speakHanzi(char)
+      await playPoemLine(poem.id, lineIdx + 1)
     } catch {
       /* 忽略 */
     }
+    // ts 工具：避免未使用警告
+    void char
   }
 
-  // 整体读：去掉标点，把整首诗拼成一句连贯的话，走 Web Speech 一次播完
+  // 整体读：把每行 mp3 连续播完，行间 200ms 短停顿
+  // 跟"听一遍"不同：听一遍有 300ms 停顿像朗读课，整体读紧凑像连续朗诵
   const [isPlayingWhole, setIsPlayingWhole] = useState(false)
   const speakWhole = async () => {
     if (isPlayingWhole) {
-      try { window.speechSynthesis?.cancel() } catch {}
+      stopRef.current = true
       setIsPlayingWhole(false)
       return
     }
-    // 停掉听一遍
-    stopRef.current = true
+    stopRef.current = true // 停掉可能正在跑的 speakAll
     setIsPlayingAll(false)
     setActiveLine(null)
     setActiveChar(-1)
-    try { window.speechSynthesis?.cancel() } catch {}
-    const wholeText = poem.lines.map(l => l.chars).join('').replace(/[，。！？、；：,.!?;:]/g, '')
+    stopRef.current = false
     setIsPlayingWhole(true)
-    try {
-      await speakHanzi(wholeText, { rate: 0.9 })
-    } catch {
-      /* 忽略 */
-    } finally {
-      setIsPlayingWhole(false)
+    for (let lineIdx = 0; lineIdx < poem.lines.length; lineIdx++) {
+      if (stopRef.current) break
+      try {
+        await playPoemLine(poem.id, lineIdx + 1)
+      } catch { /* 忽略 */ }
+      if (lineIdx < poem.lines.length - 1 && !stopRef.current) {
+        await new Promise(r => setTimeout(r, 200))
+      }
     }
+    setIsPlayingWhole(false)
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream-50 to-cream-100 p-4 flex flex-col">
       {/* 顶部 */}
-      <header className="flex items-center justify-between mb-4">
+      <header className="flex items-center justify-between mb-1">
         <button
           onClick={() => navigate('/poem')}
           className="bg-white p-2 rounded-bubble shadow text-pig-700 active:scale-95"
@@ -160,6 +141,8 @@ export default function PoemReader() {
           <Icon name={showTranslation ? 'eye' : 'book'} className="w-6 h-6" />
         </button>
       </header>
+      {/* 版本号：让用户能看到当前 build（每次 deploy 都变） */}
+      <BuildBadge className="mb-2" />
 
       {/* 标题 */}
       <h1 className="text-child-xl font-bold text-center text-ink-900 mb-1 tracking-widest">
@@ -216,7 +199,7 @@ export default function PoemReader() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        speakChar(char, pinyinTokens[i] || '')
+                        speakChar(char, pinyinTokens[i] || '', lineIdx)
                       }}
                       className={`text-3xl font-bold leading-none px-1 rounded-soft transition-all ${isHighlight ? 'text-pig-600' : 'text-ink-900'} ${isActive ? 'bg-sun-200 scale-110' : 'hover:bg-sun-50'}`}
                       aria-label={`朗读 ${char}`}

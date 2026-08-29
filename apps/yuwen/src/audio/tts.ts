@@ -358,6 +358,15 @@ export function playLessonAudio(lessonId: string): Promise<void> {
   return playFile(`/audio/lessons/l${num}.mp3`)
 }
 
+// ============== 播放古诗单行 ==============
+// 走预生成的整句 mp3（macOS Tingting voice 生成），完全不依赖 Web Speech
+// - 修 pad 上"鹅鹅鹅"只听 3 个字（Web Speech 没 voice）和切片 cache 复用 bug
+// - 声音连贯自然（一句一个 mp3，不是切片拼凑）
+// - 文件在 apps/yuwen/public/audio/poem-lines/{poemId}-line-{lineNum}.mp3
+export function playPoemLine(poemId: string, lineNum: number): Promise<void> {
+  return playFile(`/audio/poem-lines/${poemId}-line-${lineNum}.mp3`)
+}
+
 // ============== 测试工具 ==============
 export function testSlice(n: number): Promise<void> {
   return playFile(`/audio/slices/l01/slice_${String(n).padStart(2, '0')}.mp3`)
