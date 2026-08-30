@@ -160,8 +160,8 @@ export const L13_AUDIO: AudioSlice[] = [
   { pinyin: 'ong', file: '/audio/slices/l13/slice_08.mp3', note: '后鼻韵母 ong' },  // ⚠️ 修正：原 slice_07
 ]
 
-// 快速查找映射
-const audioIndex = new Map<string, AudioSlice>()
+// 快速查找映射（tts.ts 复用同一个 Map，避免双份 audioIndex 漏装 zh-synth）
+export const audioIndex = new Map<string, AudioSlice>()
 
 // 构建索引（全部课程已验证完成 ✅）
 for (const slice of [...L01_AUDIO, ...L02_AUDIO, ...L03_AUDIO, ...L04_AUDIO, ...L05_AUDIO, ...L06_AUDIO, ...L07_AUDIO, ...L08_AUDIO, ...L09_AUDIO, ...L10_AUDIO, ...L11_AUDIO, ...L12_AUDIO, ...L13_AUDIO]) {

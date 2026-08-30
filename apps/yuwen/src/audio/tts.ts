@@ -4,6 +4,7 @@
 // 不再"声母韵母连读"——那是错的拼读方式，对听写场景没意义
 
 import {
+  audioIndex, type AudioSlice,
   L01_AUDIO, L02_AUDIO, L03_AUDIO, L04_AUDIO, L05_AUDIO,
   L06_AUDIO, L07_AUDIO, L08_AUDIO, L09_AUDIO, L10_AUDIO,
   L11_AUDIO, L12_AUDIO, L13_AUDIO
@@ -14,27 +15,7 @@ import {
 // 见 playFile 注释
 let currentAudio: HTMLAudioElement | null = null
 
-// ============== 路径 A：拼音切片索引 ==============
-const audioIndex = new Map<string, string>()
-
-function buildIndex() {
-  audioIndex.clear()
-  const allSlices = [
-    ...L01_AUDIO, ...L02_AUDIO, ...L03_AUDIO, ...L04_AUDIO, ...L05_AUDIO,
-    ...L06_AUDIO, ...L07_AUDIO, ...L08_AUDIO, ...L09_AUDIO, ...L10_AUDIO,
-    ...L11_AUDIO, ...L12_AUDIO, ...L13_AUDIO
-  ]
-  for (const slice of allSlices) {
-    // 两种编码都存，确保能命中
-    const nfc = slice.pinyin.normalize('NFC')
-    const nfd = slice.pinyin.normalize('NFD')
-    audioIndex.set(nfc, slice.file)
-    audioIndex.set(nfd, slice.file)
-  }
-  console.log('[Audio] 索引构建完成，共', audioIndex.size, '条')
-}
-
-buildIndex()
+// audioIndex 从 audioMap 复用同一个 Map（同步装 L01-L13 切片，异步补 zh-synth 4193 整字）
 
 export function stopAudio() {
   if (currentAudio) {
