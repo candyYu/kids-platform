@@ -53,6 +53,7 @@ export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHan
   let file = audioIndex.get(pinyin.normalize('NFC'))
   if (file) {
     console.log('[TTS-speakPinyin] NFC 命中:', file.file || file)
+    showDebugToast(`pinyin="${pinyin}" NFC 命中: ${(file as any).file || file}`, 'green')
     return playFile(typeof file === 'string' ? file : file.file)
   }
 
@@ -60,6 +61,7 @@ export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHan
   file = audioIndex.get(pinyin.normalize('NFD'))
   if (file) {
     console.log('[TTS-speakPinyin] NFD 命中:', file.file || file)
+    showDebugToast(`pinyin="${pinyin}" NFD 命中: ${(file as any).file || file}`, 'green')
     return playFile(typeof file === 'string' ? file : file.file)
   }
 
@@ -68,10 +70,12 @@ export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHan
   // - 否则用 Web Speech 读拼音字符串（Web Speech 中文 voice 会尝试拼音→汉字映射）
   if (opts.fallbackHanzi) {
     console.warn('[TTS-speakPinyin] 找不到切片', JSON.stringify(pinyin), '→ fallback speakHanzi:', JSON.stringify(opts.fallbackHanzi))
+    showDebugToast(`pinyin="${pinyin}" 找不到! 索引大小=${audioIndex.size} → fallback hanzi="${opts.fallbackHanzi}"`, 'red')
     return speakHanzi(opts.fallbackHanzi)
   }
   // 兜底：Web Speech 读拼音（中文 voice 通常能听出 dà→大，dì→弟）
   console.warn('[TTS-speakPinyin] 找不到切片：', JSON.stringify(pinyin), '，尝试 Web Speech 读拼音')
+  showDebugToast(`pinyin="${pinyin}" 找不到! 索引大小=${audioIndex.size} → Web Speech 读拼音 (会读英文)`, 'red')
   return speakHanzi(pinyin)
 }
 
@@ -137,6 +141,7 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
 // ============== 汉字→拼音映射（用于 speakHanzi 拆音节） ==============
 // 启动时从 questionBank.ts 里抽 imageDesc → answer 反向映射
 import { HANZI_TO_PINYIN } from './hanziMap'
+import { showDebugToast } from './debugToast'
 
 let speakHanziCheckedSynth = false
 export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<void> {
@@ -166,6 +171,7 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
     const allFound = syls.every(s => audioIndex.has(s.normalize('NFC')) || audioIndex.has(s.normalize('NFD')))
     if (allFound) {
       console.log('[TTS-speakHanzi] 走 zh-synth 切片:', pinyin)
+      showDebugToast(`hanzi="${text}" → "${pinyin}" 走切片 (索引大小=${audioIndex.size})`, 'green')
       // 串行 + 间隔 350ms，避免 mp3 抢断听不清
       return (async () => {
         for (const s of syls) {
@@ -175,6 +181,7 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
       })()
     }
     console.log('[TTS-speakHanzi] 切片不全', pinyin, '，fallback Web Speech')
+    showDebugToast(`hanzi="${text}" → "${pinyin}" 切片不全! (索引大小=${audioIndex.size}) → Web Speech`, 'orange')
   }
   // 关键：优先用 zh-synth 切片（macOS say 生成的 mp3，质量好）
   // 把"大马" → ['dà','mǎ']（用 questionBank 题库 map 或简单拆分）
@@ -185,6 +192,7 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
   // 没有 Web Speech 且走不到切片：直接蜂鸣兜底（不再走 speakHanzi 死循环）
   if (!hasWebSpeech) {
     console.warn('[TTS-speakHanzi] 没 Web Speech 且没找到切片，降级蜂鸣:', text)
+    showDebugToast(`hanzi="${text}" 没 Web Speech! 蜂鸣`, 'red')
     beepFallback()
     return Promise.resolve()
   }
@@ -194,6 +202,7 @@ export function speakHanzi(text: string, opts: { rate?: number } = {}): Promise<
   const initialVoice = pickChineseVoice()
   if (!initialVoice) {
     console.warn('[TTS-speakHanzi] 没找到中文 voice（系统 TTS 未装/无中文包），蜂鸣兜底:', text)
+    showDebugToast(`hanzi="${text}" 没中文 voice! 蜂鸣 (speakHanzi 失败点)`, 'red')
     beepFallback()
     return Promise.resolve()
   }
