@@ -37,7 +37,7 @@ const RULES: Record<LessonId, RuleCard | null> = {
   },
   L02: {
     emoji: '🎵',
-    title: 'i u ü y w 四声练习',
+    title: 'i u ü 四声练习',
     points: [
       { label: 'i 的四声', example: 'ī í ǐ ì' },
       { label: 'u 的四声', example: 'ū ú ǔ ù' },
@@ -47,6 +47,21 @@ const RULES: Record<LessonId, RuleCard | null> = {
       { text: 'ī í ǐ ì', pinyin: 'i' },
       { text: 'ū ú ǔ ù', pinyin: 'u' },
       { text: 'ǖ ǘ ǚ ǜ', pinyin: 'ü' },
+    ],
+  },
+  L08Y: {
+    emoji: '🎣',
+    title: 'y w 声母 + 整体认读复习',
+    points: [
+      { label: 'y 像树杈，读"衣"', example: 'yā（鸭） yú（鱼）' },
+      { label: 'w 像屋顶，读"乌"', example: 'wū（乌） wō（窝）' },
+      { label: '整体认读复习', example: 'yi wu yu' },
+      { label: 'y + ü → yu', example: 'ü 见 y 脱帽：yù（玉）' },
+    ],
+    samples: [
+      { text: 'yī yí yǐ yì', pinyin: 'yi' },
+      { text: 'wū wú wǔ wù', pinyin: 'wu' },
+      { text: 'yū yú yǔ yù', pinyin: 'yu' },
     ],
   },
   L03: null,

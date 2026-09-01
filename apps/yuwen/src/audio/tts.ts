@@ -28,7 +28,7 @@ export function stopAudio() {
 // ============== 路径 A：speakPinyin — 走切片 ==============
 // 接受单音节（如 'ní'、'd'、'a'）
 // 不接受多音节整词 — 听写用 speakHanzi
-export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHanzi?: string } = {}): Promise<void> {
+export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHanzi?: string; rate?: number } = {}): Promise<void> {
   console.log('[TTS-speakPinyin] called:', JSON.stringify(pinyin), 'opts:', JSON.stringify(opts))
   // 1. NFC 精确匹配
   let file = audioIndex.get(pinyin.normalize('NFC'))
@@ -52,12 +52,12 @@ export function speakPinyin(pinyin: string, opts: { lesson?: string; fallbackHan
   if (opts.fallbackHanzi) {
     console.warn('[TTS-speakPinyin] 找不到切片', JSON.stringify(pinyin), '→ fallback speakHanzi:', JSON.stringify(opts.fallbackHanzi))
     showDebugToast(`pinyin="${pinyin}" 找不到! 索引大小=${audioIndex.size} → fallback hanzi="${opts.fallbackHanzi}"`, 'red')
-    return speakHanzi(opts.fallbackHanzi)
+    return speakHanzi(opts.fallbackHanzi, { rate: opts.rate })
   }
   // 兜底：Web Speech 读拼音（中文 voice 通常能听出 dà→大，dì→弟）
   console.warn('[TTS-speakPinyin] 找不到切片：', JSON.stringify(pinyin), '，尝试 Web Speech 读拼音')
   showDebugToast(`pinyin="${pinyin}" 找不到! 索引大小=${audioIndex.size} → Web Speech 读拼音 (会读英文)`, 'red')
-  return speakHanzi(pinyin)
+  return speakHanzi(pinyin, { rate: opts.rate })
 }
 
 // ============== 路径 B：speakHanzi — 走 Web Speech =============

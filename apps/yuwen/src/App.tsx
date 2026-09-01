@@ -8,6 +8,7 @@ import ReviewPage from './routes/ReviewPage'
 import ParentDashboardPage from './routes/ParentDashboardPage'
 import SettingsPage from './routes/SettingsPage'
 import CheatSheetPage from './routes/CheatSheetPage'
+import TeacherPage from './routes/TeacherPage'
 import PoemList from './components/poem/PoemList'
 import PoemReader from './components/poem/PoemReader'
 import { isUnlocked, redirectToLogin } from './auth/gate'
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/parent" element={<ParentDashboardPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cheatsheet" element={<CheatSheetPage />} />
+      <Route path="/teacher" element={<TeacherPage />} />
       <Route path="/poem" element={<PoemList />} />
       <Route path="/poem/:id" element={<PoemReader />} />
       <Route path="*" element={<HomePage />} />

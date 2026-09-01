@@ -12,13 +12,17 @@ export function DemoStage({ lesson, onComplete }: Props) {
       <p className="text-center text-child text-sea-900">
         跟着老师看一遍：{lesson.theme}
       </p>
-      <div className="bg-black rounded-bubble overflow-hidden aspect-video">
-        <video
-          src={lesson.videoFile}
-          controls
-          playsInline
-          className="w-full h-full"
-        />
+      <div className="bg-black rounded-bubble overflow-hidden aspect-video flex items-center justify-center">
+        {lesson.videoFile ? (
+          <video
+            src={lesson.videoFile}
+            controls
+            playsInline
+            className="w-full h-full"
+          />
+        ) : (
+          <p className="text-white/80 text-child px-6 text-center">🎬 教学视频制作中<br />先用「规则」和「拼读」环节学习</p>
+        )}
       </div>
       <div className="flex gap-3">
         <button

@@ -3,7 +3,7 @@
 
 export type LessonId =
   | 'L01' | 'L02' | 'L03' | 'L04' | 'L05' | 'L06' | 'L07'
-  | 'L08' | 'L09' | 'L10' | 'L11' | 'L12' | 'L13'
+  | 'L08' | 'L08Y' | 'L09' | 'L10' | 'L11' | 'L12' | 'L13'
 
 export interface Lesson {
   id: LessonId

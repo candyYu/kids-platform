@@ -55,11 +55,20 @@ export default function Home() {
         </div>
         <div className="flex-1">
           <Card
-            href={yuwenHref}
+            href={`${yuwenHref}?g=1`}
             bg="bg-gradient-to-br from-pig-400 to-pig-600"
             emoji="📖"
             title="一年级语文"
             subtitle="拼音 · 古诗 · 听写"
+          />
+        </div>
+        <div className="flex-1">
+          <Card
+            href={`${yuwenHref}?g=2`}
+            bg="bg-gradient-to-br from-sun-400 to-sun-600"
+            emoji="📗"
+            title="二年级语文"
+            subtitle="课文朗读 · 认字"
           />
         </div>
       </div>

@@ -1,6 +1,7 @@
 // Dexie 数据库 schema
 // 表：lessons, progress, errorItems, badges, streak, settings, sessions
 import Dexie, { Table } from 'dexie'
+import { LESSONS_BY_GRADE } from '@/data'
 
 export interface LessonRecord {
   id: string                    // 'L01' ... 'L13'
@@ -110,26 +111,36 @@ export async function ensureDefaults() {
   }
 }
 
-// 全部 lesson 记录（如不存在则按 L01-L13 初始化）
+// 全部 lesson 记录（1年级+2年级，不存在则初始化；两年级各自第 1 课解锁）
 export async function ensureLessons() {
-  const lessonIds = ['L01','L02','L03','L04','L05','L06','L07','L08','L09','L10','L11','L12','L13']
-  for (let i = 0; i < lessonIds.length; i++) {
-    const id = lessonIds[i]
-    const existing = await db.lessons.get(id)
-    if (!existing) {
-      await db.lessons.put({
-        id,
-        unlocked: i === 0 ? 1 : 0,
-        stars: 0,
-        bestScore: 0,
-      })
+  const grades = [
+    { g: '1' as const, list: LESSONS_BY_GRADE['1'] },
+    { g: '2' as const, list: LESSONS_BY_GRADE['2'] },
+  ]
+  for (const { list } of grades) {
+    // 拼音单元的第一课也要解锁（1年级第一课现在是"我上学了"，拼音从第9个开始）
+    const firstPinyinIdx = list.findIndex(l => l.kind === 'pinyin')
+    for (let i = 0; i < list.length; i++) {
+      const id = list[i].id
+      const existing = await db.lessons.get(id)
+      if (!existing) {
+        await db.lessons.put({
+          id,
+          // 阅读课/识字课自由进入，拼音课从单元第一课起顺序解锁
+          unlocked: i === 0 || i === firstPinyinIdx || list[i].kind !== 'pinyin' ? 1 : 0,
+          stars: 0,
+          bestScore: 0,
+        })
+      }
     }
   }
   // 隐藏解锁（开发模式）
   const params = new URLSearchParams(window.location.search)
   if (params.get('unlock') === 'all') {
-    for (const id of lessonIds) {
-      await db.lessons.update(id, { unlocked: 1 })
+    for (const { list } of grades) {
+      for (const l of list) {
+        await db.lessons.update(l.id, { unlocked: 1 })
+      }
     }
   }
 }

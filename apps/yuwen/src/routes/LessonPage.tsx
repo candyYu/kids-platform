@@ -1,7 +1,8 @@
 // 关卡详情：5 阶段流水线
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { getLesson } from '@/data/lessons'
+import { getLesson } from '@/data'
+import ReadingLesson from '@/routes/ReadingLesson'
 import { db, ensureDefaults, ensureLessons, LessonRecord } from '@/db/schema'
 import { IntroStage } from '@/components/stages/IntroStage'
 import { RuleStage } from '@/components/stages/RuleStage'
@@ -48,6 +49,14 @@ export default function LessonPage() {
       </main>
     )
   }
+
+  // 阅读课/识字课走轻量三阶段（听读/认字/练），拼音课保持 5 阶段流水线
+  if (lesson.kind !== 'pinyin') {
+    return <ReadingLesson lesson={lesson} />
+  }
+
+  // 统一 Lesson → 旧拼音课 Lesson（stages 仍按旧类型声明，字段兼容）
+  const legacyLesson = lesson as unknown as import('@/data/lessons').Lesson
 
   const stageIdx = STAGES.findIndex(s => s.key === stage)
   const progress = ((stageIdx + 1) / STAGES.length) * 100
@@ -97,12 +106,12 @@ export default function LessonPage() {
 
       {/* 阶段内容 */}
       <div className="p-6 max-w-2xl mx-auto">
-        {stage === 'intro' && <IntroStage lesson={lesson} onComplete={() => setStage('rule')} />}
+        {stage === 'intro' && <IntroStage lesson={legacyLesson} onComplete={() => setStage('rule')} />}
         {stage === 'rule' && <RuleStage lessonId={lesson.id} onComplete={() => setStage('demo')} />}
-        {stage === 'demo' && <DemoStage lesson={lesson} onComplete={() => setStage('dictation')} />}
+        {stage === 'demo' && <DemoStage lesson={legacyLesson} onComplete={() => setStage('dictation')} />}
         {stage === 'dictation' && (
           <DictationStage
-            lesson={lesson}
+            lesson={legacyLesson}
             onComplete={(c, t) => {
               setStats(s => ({ ...s, dictationCorrect: c, dictationTotal: t }))
               setStage('quiz')
@@ -111,7 +120,7 @@ export default function LessonPage() {
         )}
         {stage === 'quiz' && (
           <QuizStage
-            lesson={lesson}
+            lesson={legacyLesson}
             onComplete={(c, t) => {
               setStats(s => ({ ...s, quizCorrect: c, quizTotal: t }))
               setStage('challenge')
@@ -120,7 +129,7 @@ export default function LessonPage() {
         )}
         {stage === 'challenge' && (
           <ChallengeStage
-            lesson={lesson}
+            lesson={legacyLesson}
             onComplete={() => setStage('done')}
           />
         )}

@@ -1,12 +1,14 @@
-// 首页
+// 首页（按 ?g=1/2 年级显示对应内容的"继续学习"）
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, ensureDefaults, ensureLessons } from '@/db/schema'
 import { updateStreak } from '@/utils/badges'
+import { activeLessons, GRADE_LABEL } from '@/data'
 
 export default function HomePage() {
-  const lessons = useLiveQuery(() => db.lessons.toArray(), []) || []
+  const lessons = activeLessons()
+  const recs = useLiveQuery(() => db.lessons.toArray(), []) || []
   const errorCount = useLiveQuery(() => db.errorItems.count(), []) || 0
   const badgeCount = useLiveQuery(() => db.badges.count(), []) || 0
 
@@ -18,17 +20,20 @@ export default function HomePage() {
     })()
   }, [])
 
-  const nextLesson = lessons
-    .filter(l => l.unlocked === 1 && l.stars === 0)
-    .sort((a, b) => a.id.localeCompare(b.id))[0]
-    || lessons.find(l => l.unlocked === 1)
-    || lessons[0]
+  const recOf = (id: string) => recs.find(r => r.id === id)
+  const nextLesson = lessons.find(l => {
+    const rec = recOf(l.id)
+    return rec ? rec.unlocked === 1 && rec.stars === 0 : false
+  }) ?? lessons[0]
 
   const streak = useLiveQuery(() => db.streak.get('singleton'), [])
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 p-6 flex flex-col">
-      <div className="flex justify-end -mt-2 mb-2">
+      <div className="flex justify-end -mt-2 mb-2 gap-2">
+        <Link to="/teacher" className="inline-flex items-center gap-1 text-xs font-bold text-pig-500 bg-white/70 border border-pig-200 px-3 py-1.5 rounded-full active:scale-95">
+          👩‍🏫 老师
+        </Link>
         <a href="/" className="inline-flex items-center gap-1 text-xs font-bold text-pig-500 bg-white/70 border border-pig-200 px-3 py-1.5 rounded-full active:scale-95">
           🏠 回首页
         </a>
@@ -37,7 +42,7 @@ export default function HomePage() {
         <h1 className="text-child-xl font-bold text-pig-700 mb-2">
           小小语文家
         </h1>
-        <p className="text-child text-sea-900/70">拼音闯关 · 一起出发吧</p>
+        <p className="text-child text-sea-900/70">{GRADE_LABEL} · {lessons.some(l => l.kind === 'pinyin') ? '拼音闯关' : '课文朗读'} · 一起出发吧</p>
       </header>
 
       {/* 连续打卡 */}
@@ -88,13 +93,15 @@ export default function HomePage() {
               </span>
             )}
           </Link>
-          <Link
-            to="/review"
-            className="bg-white text-sun-700 p-4 rounded-bubble shadow border-2 border-sun-300 active:scale-95"
-          >
-            <p className="text-3xl mb-1">🎪</p>
-            <p className="text-child font-bold">复习闯关</p>
-          </Link>
+          {lessons.some(l => l.kind === 'pinyin') && (
+            <Link
+              to="/review"
+              className="bg-white text-sun-700 p-4 rounded-bubble shadow border-2 border-sun-300 active:scale-95"
+            >
+              <p className="text-3xl mb-1">🎪</p>
+              <p className="text-child font-bold">复习闯关</p>
+            </Link>
+          )}
           <Link
             to={`/parent?pin=0000`}
             className="bg-white text-gray-700 p-4 rounded-bubble shadow border-2 border-gray-200 active:scale-95"

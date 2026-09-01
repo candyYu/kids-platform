@@ -131,12 +131,9 @@ export const L02_QUESTIONS: Question[] = [
   { id: 'L02-q01', lessonId: 'L02', type: 'trace', prompt: '描一描，写一写', target: 'i', rows: 3, colsPerRow: 7 },
   { id: 'L02-q02', lessonId: 'L02', type: 'trace', prompt: '描一描，写一写', target: 'u', rows: 3, colsPerRow: 7 },
   { id: 'L02-q03', lessonId: 'L02', type: 'trace', prompt: '描一描，写一写', target: 'ü', rows: 3, colsPerRow: 7 },
-  { id: 'L02-q04', lessonId: 'L02', type: 'trace', prompt: '描一描，写一写', target: 'y', rows: 3, colsPerRow: 7 },
-  { id: 'L02-q05', lessonId: 'L02', type: 'trace', prompt: '描一描，写一写', target: 'w', rows: 3, colsPerRow: 7 },
   // 看图写拼音
   { id: 'L02-q06', lessonId: 'L02', type: 'imageToSyllable', prompt: '看图拼一拼：衣服（yī）', imageEmoji: '👕', imageDesc: '衣服', answer: 'yī' },
   { id: 'L02-q07', lessonId: 'L02', type: 'imageToSyllable', prompt: '看图拼一拼：鱼（yú）', imageEmoji: '🐟', imageDesc: '鱼', answer: 'yú' },
-  { id: 'L02-q08', lessonId: 'L02', type: 'imageToSyllable', prompt: '看图拼一拼：乌云（wū yún）', imageEmoji: '☁️', imageDesc: '乌云', answer: 'wū yún' },
   // i u ü 的单声调听写
   { id: 'L02-q08a', lessonId: 'L02', type: 'imageToSyllable', prompt: '听一听，按出 i 的二声', imageEmoji: '🎵', imageDesc: 'i 的二声', answer: 'í' },
   { id: 'L02-q08b', lessonId: 'L02', type: 'imageToSyllable', prompt: '听一听，按出 u 的二声', imageEmoji: '🎶', imageDesc: 'u 的二声', answer: 'ú' },
@@ -162,6 +159,16 @@ export const L02_QUESTIONS: Question[] = [
     { tone: 3, items: ['yǐ'] },
     { tone: 4, items: ['wǔ'] },
   ] },
+]
+
+// ==================== L08Y y w（2024 新版第9课，从 L02 拆出） ====================
+export const L08Y_QUESTIONS: Question[] = [
+  { id: 'L08Y-q01', lessonId: 'L08Y', type: 'trace', prompt: '描一描，写一写', target: 'y', rows: 3, colsPerRow: 7 },
+  { id: 'L08Y-q02', lessonId: 'L08Y', type: 'trace', prompt: '描一描，写一写', target: 'w', rows: 3, colsPerRow: 7 },
+  { id: 'L08Y-q03', lessonId: 'L08Y', type: 'imageToSyllable', prompt: '看图拼一拼：乌云（wū yún）', imageEmoji: '☁️', imageDesc: '乌云', answer: 'wū yún' },
+  { id: 'L08Y-q04', lessonId: 'L08Y', type: 'imageToSyllable', prompt: '看图拼一拼：鸭子（yā zi）', imageEmoji: '🦆', imageDesc: '鸭子', answer: 'yā zi' },
+  { id: 'L08Y-q05', lessonId: 'L08Y', type: 'pickByChar', prompt: '"鱼"的正确拼音是？', char: '鱼', options: ['yí', 'yǔ', 'yù', 'wǔ'], answer: 'yǔ' },
+  { id: 'L08Y-q06', lessonId: 'L08Y', type: 'pickByChar', prompt: '"五"的正确拼音是？', char: '五', options: ['wū', 'wǔ', 'yǔ', 'wù'], answer: 'wǔ' },
 ]
 
 // ==================== L03 声母 b p m f ====================
@@ -683,6 +690,7 @@ export const QUESTION_BANK: Record<LessonId, Question[]> = {
   L11: L11_QUESTIONS,
   L12: L12_QUESTIONS,
   L13: L13_QUESTIONS,
+  L08Y: L08Y_QUESTIONS,
 }
 
 export function getQuestions(lessonId: string): Question[] {

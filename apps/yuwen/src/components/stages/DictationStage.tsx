@@ -73,7 +73,7 @@ export function DictationStage({ lesson, onComplete }: Props) {
       // 4 声调链题（'ā á ǒ à'）：imageDesc 是 "a 的四个声调"，Web Speech 读不懂
       // → 改成逐个音节读：把 answer 拆空格每个音节 speakHanzi
       const syls = ans.split(/\s+/).filter(Boolean)
-      const is4ToneChain = syls.length >= 3 && syls.every(s => /^[a-zA-Z\u0100-\u017F]+$/.test(s) && s.length <= 2)
+      const is4ToneChain = syls.length >= 3 && syls.every((s: string) => /^[a-zA-Z\u0100-\u017F]+$/.test(s) && s.length <= 2)
       speakTimer.current = setTimeout(() => {
         if (is4ToneChain) {
           // 4 声调链：按顺序串行读每个拼音（speakPinyin 找不到切片时 fallback 到 speakHanzi(desc)）
