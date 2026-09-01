@@ -111,26 +111,26 @@ export async function ensureDefaults() {
   }
 }
 
-// 全部 lesson 记录（1年级+2年级，不存在则初始化；两年级各自第 1 课解锁）
+// 全部 lesson 记录（1年级+2年级，不存在则初始化；全部自由进入——家长按需选课，不做顺序锁）
 export async function ensureLessons() {
   const grades = [
     { g: '1' as const, list: LESSONS_BY_GRADE['1'] },
     { g: '2' as const, list: LESSONS_BY_GRADE['2'] },
   ]
   for (const { list } of grades) {
-    // 拼音单元的第一课也要解锁（1年级第一课现在是"我上学了"，拼音从第9个开始）
-    const firstPinyinIdx = list.findIndex(l => l.kind === 'pinyin')
     for (let i = 0; i < list.length; i++) {
       const id = list[i].id
       const existing = await db.lessons.get(id)
       if (!existing) {
         await db.lessons.put({
           id,
-          // 阅读课/识字课自由进入，拼音课从单元第一课起顺序解锁
-          unlocked: i === 0 || i === firstPinyinIdx || list[i].kind !== 'pinyin' ? 1 : 0,
+          unlocked: 1,
           stars: 0,
           bestScore: 0,
         })
+      } else if (existing.unlocked !== 1) {
+        // 迁移：老浏览器 DB 里被顺序锁锁住的拼音课，一次性放开
+        await db.lessons.update(id, { unlocked: 1 })
       }
     }
   }

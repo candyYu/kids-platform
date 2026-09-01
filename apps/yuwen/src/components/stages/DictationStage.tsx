@@ -64,11 +64,11 @@ export function DictationStage({ lesson, onComplete }: Props) {
     try { window.speechSynthesis?.cancel() } catch {}
     if (questions[idx]) {
       const q = questions[idx] as any
-      // 听写统一走 speakHanzi（Web Speech 读汉字），不走切片
-      // 原因：L03+ 整词题（dà mǎ）和 L01/L02 4 声调链题（'ā á ǒ à'）
-      // 切片只覆盖了 L01-L02 单韵母，L03+ 声母带声调都没有切片
-      // imageDesc 是纯汉字（"大马"），Web Speech 读汉字最自然
-      const desc = (q.imageDesc || '').trim()
+      // imageDesc==='听音' 是 L01-q07a-d 听音辨调题的占位符（不是真实描述）：
+      // 这类题的音频就是答案本身（ā/á/ǎ/à 切片），必须走 speakPinyin 播切片；
+      // 之前把"听音"两个字当 desc 读了出来，孩子听到的是"听音"而不是题目
+      const rawDesc = (q.imageDesc || '').trim()
+      const desc = rawDesc === '听音' ? '' : rawDesc
       const ans = (q.answer || '').trim()
       // 4 声调链题（'ā á ǒ à'）：imageDesc 是 "a 的四个声调"，Web Speech 读不懂
       // → 改成逐个音节读：把 answer 拆空格每个音节 speakHanzi
@@ -110,6 +110,9 @@ export function DictationStage({ lesson, onComplete }: Props) {
   }
 
   const q = questions[idx] as any
+  const rawDesc = (q.imageDesc || '').trim()
+  // '听音' 是听音辨调题占位符（见 useEffect 注释），显示与音频都按"无描述"处理
+  const desc = rawDesc === '听音' ? '' : rawDesc
 
   const submit = (userInput: string) => {
     // L01/L02 单韵母课：声调必须对（教学重点）
@@ -155,11 +158,15 @@ export function DictationStage({ lesson, onComplete }: Props) {
         {q.imageEmoji ? (
           <div className="text-7xl mb-2">{q.imageEmoji}</div>
         ) : (
-          <p className="text-pig-500 mb-2">{q.imageDesc || '听音'}</p>
+          <p className="text-pig-500 mb-2">{desc || q.prompt || '听音'}</p>
         )}
-        <p className="text-pig-600 text-sm mb-3">看图：{q.imageDesc || '?'}</p>
+        {desc ? (
+          <p className="text-pig-600 text-sm mb-3">看图：{desc}</p>
+        ) : (
+          q.prompt && <p className="text-pig-600 text-sm mb-3">{q.prompt}</p>
+        )}
         <button
-          onClick={() => speakHanzi(q.imageDesc || q.answer)}
+          onClick={() => speakHanzi(desc || q.answer)}
           className="w-24 h-24 rounded-full bg-pig-500 text-white shadow-lift active:scale-95 flex flex-col items-center justify-center mx-auto"
           aria-label="听发音"
         >

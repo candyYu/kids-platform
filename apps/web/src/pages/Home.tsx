@@ -1,35 +1,35 @@
-// 首页：两个大卡片（音乐 / 语文），点击进入对应应用
+// 首页：学科平级入口（语文 / 音乐已上线；数学 / 英语 敬请期待占位）
+// 年级选择收在语文应用内部（HomePage 顶部的年级切换，localStorage 记住上次年级）
 // 设计：佩奇风格 + 圆润无尖角 + 大色块 + 不需要文字输入
 // 自适应布局：
-//   < 640px (sm)：竖排堆叠（iPhone / 小屏手机）
-//   >= 640px (sm)：横排并排（iPad / 平板 / 电脑）
-//   >= 1024px (lg)：字号略大（iPad 横屏 / 桌面）
+//   < 640px：2×2 网格（手机）
+//   >= 640px：2×2 网格略大（平板 / 电脑）
 
 interface CardProps {
-  href: string
+  href?: string  // 无 href = 敬请期待占位（不可点）
   bg: string
-  emoji: string  // 不引 SVG，太重；用 Unicode 装饰性 emoji
+  emoji: string
   title: string
   subtitle: string
-  onClick?: () => void
 }
 
 function Card({ href, bg, emoji, title, subtitle }: CardProps) {
-  return (
-    <a
-      href={href}
-      className={`${bg} block rounded-bubble shadow-card p-6 sm:p-8 text-white active:scale-95 transition-transform`}
-    >
-      <div className="text-6xl sm:text-7xl lg:text-8xl mb-3 text-center">{emoji}</div>
-      <div className="text-2xl sm:text-3xl font-bold text-center mb-1">{title}</div>
-      <div className="text-sm sm:text-base text-center opacity-90">{subtitle}</div>
-    </a>
+  const cls = `${bg} block rounded-bubble shadow-card p-6 sm:p-8 text-white active:scale-95 transition-transform text-center`
+  const inner = (
+    <>
+      <div className="text-6xl sm:text-7xl mb-3">{emoji}</div>
+      <div className="text-2xl sm:text-3xl font-bold mb-1">{title}</div>
+      <div className="text-sm sm:text-base opacity-90">{subtitle}</div>
+    </>
   )
+  if (href) return <a href={href} className={cls}>{inner}</a>
+  // 占位卡：去饱和 + 半透明，表达"还没开学"
+  return <div className={`${cls} opacity-50 saturate-50 cursor-default`}>{inner}</div>
 }
 
 export default function Home() {
   // 本地 dev：music 在 5174，yuwen 在 5175
-  // 部署到 Vercel：/music → music SPA, /yuwen → yuwen SPA（同源）
+  // 部署到 GitHub Pages：/music → music SPA, /yuwen → yuwen SPA（同源）
   const isDev = import.meta.env.DEV
   const musicHref = isDev ? 'http://127.0.0.1:5174' : '/music'
   const yuwenHref = isDev ? 'http://127.0.0.1:5175' : '/yuwen'
@@ -42,35 +42,34 @@ export default function Home() {
         <p className="text-sm sm:text-base text-pig-500 mt-1">想学什么呀？</p>
       </header>
 
-      {/* 核心响应式：竖排 → 横排 */}
-      <div className="flex-1 flex flex-col sm:flex-row gap-4 sm:gap-6 max-w-md sm:max-w-3xl mx-auto w-full">
-        <div className="flex-1">
-          <Card
-            href={musicHref}
-            bg="bg-gradient-to-br from-purple-400 to-purple-600"
-            emoji="🎵"
-            title="小小音乐家"
-            subtitle="听音 · 唱歌 · 视唱练耳"
-          />
-        </div>
-        <div className="flex-1">
-          <Card
-            href={`${yuwenHref}?g=1`}
-            bg="bg-gradient-to-br from-pig-400 to-pig-600"
-            emoji="📖"
-            title="一年级语文"
-            subtitle="拼音 · 古诗 · 听写"
-          />
-        </div>
-        <div className="flex-1">
-          <Card
-            href={`${yuwenHref}?g=2`}
-            bg="bg-gradient-to-br from-sun-400 to-sun-600"
-            emoji="📗"
-            title="二年级语文"
-            subtitle="课文朗读 · 认字"
-          />
-        </div>
+      {/* 学科平级 2×2 */}
+      <div className="flex-1 grid grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto w-full content-center">
+        <Card
+          href={yuwenHref}
+          bg="bg-gradient-to-br from-pig-400 to-pig-600"
+          emoji="📖"
+          title="小小语文家"
+          subtitle="拼音 · 课文 · 古诗"
+        />
+        <Card
+          href={musicHref}
+          bg="bg-gradient-to-br from-purple-400 to-purple-600"
+          emoji="🎵"
+          title="小小音乐家"
+          subtitle="听音 · 唱歌 · 视唱练耳"
+        />
+        <Card
+          bg="bg-gradient-to-br from-sea-300 to-sea-400"
+          emoji="🔢"
+          title="小小数学家"
+          subtitle="敬请期待"
+        />
+        <Card
+          bg="bg-gradient-to-br from-sun-300 to-sun-400"
+          emoji="🔤"
+          title="小小英语家"
+          subtitle="敬请期待"
+        />
       </div>
 
       <footer className="text-center text-xs text-pig-400 mt-6">

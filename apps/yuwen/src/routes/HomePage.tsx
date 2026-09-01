@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, ensureDefaults, ensureLessons } from '@/db/schema'
 import { updateStreak } from '@/utils/badges'
-import { activeLessons, GRADE_LABEL } from '@/data'
+import { activeLessons, GRADE_LABEL, ACTIVE_GRADE } from '@/data'
 
 export default function HomePage() {
   const lessons = activeLessons()
@@ -38,12 +38,32 @@ export default function HomePage() {
           🏠 回首页
         </a>
       </div>
-      <header className="text-center mt-6 mb-8">
+      <header className="text-center mt-6 mb-4">
         <h1 className="text-child-xl font-bold text-pig-700 mb-2">
           小小语文家
         </h1>
         <p className="text-child text-sea-900/70">{GRADE_LABEL} · {lessons.some(l => l.kind === 'pinyin') ? '拼音闯关' : '课文朗读'} · 一起出发吧</p>
       </header>
+
+      {/* 年级切换：带 ?g= 整页刷新，grade.ts 读取并持久化到 localStorage */}
+      <div className="flex justify-center gap-3 mb-6">
+        {(['1', '2'] as const).map(g => {
+          const active = ACTIVE_GRADE === g
+          return (
+            <a
+              key={g}
+              href={`?g=${g}`}
+              className={`px-6 py-2 rounded-full text-child font-bold border-2 active:scale-95 transition ${
+                active
+                  ? 'bg-pig-500 text-white border-pig-500 shadow-bubble'
+                  : 'bg-white text-pig-500 border-pig-200'
+              }`}
+            >
+              {g === '1' ? '一年级' : '二年级'}
+            </a>
+          )
+        })}
+      </div>
 
       {/* 连续打卡 */}
       {streak && streak.current > 0 && (

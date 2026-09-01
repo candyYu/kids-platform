@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>小小音乐家 · 视唱练耳</title>
+    <script>
+      // GitHub Pages 404 fallback 配套：404.html 把深链包成 ?p= 跳过来，
+      // 这里在 React Router 挂载前把真实路径还原（如 /music/some-route）
+      (function () {
+        try {
+          var p = new URLSearchParams(window.location.search).get('p')
+          if (p && p.charAt(0) === '/') history.replaceState(null, '', p)
+        } catch (e) { /* 忽略 */ }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
