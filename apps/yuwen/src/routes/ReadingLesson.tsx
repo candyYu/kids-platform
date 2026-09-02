@@ -1,10 +1,13 @@
 // 阅读课/识字课学习页：听读 → 认字 → 练（三阶段，配拼音课 5 阶段之外的轻量流程）
 // 音频：优先 /audio/reading/{id}/line-{N}.mp3（构建前 gen-reading-audio.mjs 生成），
 //       缺文件时回退浏览器 speechSynthesis（zh-CN）
+// 认字点读：优先 /audio/reading/char/u{hex}.mp3 整字 mp3（pad 上 speechSynthesis 无中文
+//       voice 会静默无声，必须走 mp3——同 tts.ts 的 mp3 优先原则），缺文件回退 speakHanzi
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lesson } from '@/data/types'
 import { getLessonText, lessonChars, ACTIVE_GRADE } from '@/data'
 import { db } from '@/db/schema'
+import { speakHanzi, stopAudio } from '@/audio/tts'
 
 type Stage = 'listen' | 'chars' | 'quiz'
 
@@ -22,6 +25,28 @@ function speak(text: string) {
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(u)
   } catch { /* 无 TTS 环境 */ }
+}
+
+// ---- 认字点读：整字 mp3 优先，speakHanzi（zh-synth 切片 → Web Speech → 蜂鸣）兜底 ----
+// 每次 new Audio 不缓存实例（android webview 的 ended→play 会静默忽略，见 tts.ts）
+let charAudio: HTMLAudioElement | null = null
+function charUrl(ch: string) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  return `${base}/audio/reading/char/u${ch.codePointAt(0)!.toString(16)}.mp3`
+}
+function playChar(ch: string) {
+  try { charAudio?.pause() } catch { /* 已释放 */ }
+  stopAudio()
+  charAudio = new Audio(charUrl(ch))
+  charAudio.onerror = () => speakHanzi(ch)
+  void charAudio.play().catch((e: unknown) => {
+    // AbortError = 被下一次 playChar 的 pause() 打断（正常切换，不兜底，否则双读）；
+    // NotAllowedError 等（autoplay 被拦）才走 speakHanzi 兜底
+    if ((e as DOMException)?.name !== 'AbortError') speakHanzi(ch)
+  })
+}
+function stopChar() {
+  try { charAudio?.pause() } catch { /* 已释放 */ }
 }
 
 export default function ReadingLesson({ lesson }: { lesson: Lesson }) {
@@ -43,6 +68,7 @@ export default function ReadingLesson({ lesson }: { lesson: Lesson }) {
 
   useEffect(() => () => {
     audioRef.current?.pause()
+    stopChar()
     window.speechSynthesis?.cancel()
   }, [])
 
@@ -151,7 +177,7 @@ export default function ReadingLesson({ lesson }: { lesson: Lesson }) {
               {chars.map(ch => (
                 <button
                   key={ch}
-                  onClick={() => speak(ch)}
+                  onClick={() => playChar(ch)}
                   className="aspect-square bg-white rounded-bubble border-2 border-pig-200 text-4xl font-bold text-sea-900 active:scale-95 active:bg-pig-100"
                 >
                   {ch}
@@ -188,7 +214,7 @@ function QuizStage({ chars, onDone }: { chars: string[]; onDone: (score: number)
   const [picked, setPicked] = useState<string | null>(null)
 
   const q = qs[idx]
-  useEffect(() => { if (q) speak(q.answer) }, [q])
+  useEffect(() => { if (q) playChar(q.answer) }, [q])
 
   if (!q) {
     return (
@@ -215,7 +241,7 @@ function QuizStage({ chars, onDone }: { chars: string[]; onDone: (score: number)
     <section>
       <p className="text-center text-pig-500 text-sm mb-2">第 {idx + 1} / {qs.length} 题 · 听发音选字</p>
       <button
-        onClick={() => speak(q.answer)}
+        onClick={() => playChar(q.answer)}
         className="block mx-auto w-24 h-24 rounded-full bg-sun-300 text-4xl active:scale-95 mb-6"
         aria-label="再听一次"
       >🔊</button>

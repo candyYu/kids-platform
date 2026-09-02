@@ -89,6 +89,59 @@ for (const lesson of ALL) {
 
 console.log(`\n生成完成: ${success} 新生成, ${skipped} 已存在跳过, ${failed} 失败`)
 
+// ---------- 认字点读：整字 mp3（共享目录 char/u{codepoint-hex}.mp3） ----------
+// 与 lessonChars() 逻辑一致：每课取前 16 个不重复汉字；跨课去重后共用一份文件。
+// pad 上 speechSynthesis 无中文 voice 会静默无声 → 认字必须走 mp3（tts.ts speakHanzi 兜底）。
+const CHAR_DIR = join(OUT_BASE, 'char')
+mkdirSync(CHAR_DIR, { recursive: true })
+const charSet = new Set()
+for (const lesson of ALL) {
+  const seen = new Set()
+  let count = 0
+  for (const line of lesson.lines) {
+    for (const ch of line) {
+      if (/[\u4e00-\u9fff]/.test(ch) && !seen.has(ch)) {
+        seen.add(ch)
+        charSet.add(ch)
+        if (++count >= 16) break
+      }
+    }
+    if (count >= 16) break
+  }
+}
+console.log(`\n认字生成: ${charSet.size} 个唯一汉字（每课前 16 字，跨课去重）`)
+
+function sayChar(ch) {
+  const hex = ch.codePointAt(0).toString(16)
+  const outFile = join(CHAR_DIR, `u${hex}.mp3`)
+  if (!FORCE && existsSync(outFile) && statSync(outFile).size > 500) return 'skip'
+  const aiff = `/tmp/reading-char-${hex}.aiff`
+  const run = () => {
+    // 单字教学：语速 130（比课文 150 慢），孩子听得清声调
+    execSync(`say -v ${VOICE} --rate=130 -o ${aiff} ${JSON.stringify(ch)}`, { stdio: 'pipe', timeout: 30000, killSignal: 'SIGKILL' })
+    execSync(`ffmpeg -y -i ${aiff} -codec:a libmp3lame -qscale:a 2 -ac 1 ${outFile} 2>/dev/null`, { stdio: 'pipe', timeout: 30000, killSignal: 'SIGKILL' })
+    execSync(`rm -f ${aiff}`, { stdio: 'pipe' })
+  }
+  try { run(); return 'ok' }
+  catch {
+    try { run(); return 'ok' } // say 偶发被系统打断，重试一次
+    catch (e2) {
+      console.error(`  ✗ char ${ch} (u${hex}): ${e2.message}`)
+      try { execSync(`rm -f ${aiff}`) } catch {}
+      return 'fail'
+    }
+  }
+}
+
+let charOk = 0, charSkip = 0, charFail = 0
+for (const ch of charSet) {
+  const r = sayChar(ch)
+  if (r === 'ok') charOk++
+  else if (r === 'skip') charSkip++
+  else charFail++
+}
+console.log(`认字完成: ${charOk} 新生成, ${charSkip} 已存在跳过, ${charFail} 失败`)
+
 // ---------- MD5 查重 ----------
 const hashMap = new Map()
 let fileCount = 0
@@ -108,18 +161,29 @@ const dupGroups = [...hashMap.values()].filter(g => g.length > 1)
 console.log(`\nMD5 查重: ${fileCount} 个文件, ${dupGroups.length} 组重复`)
 for (const g of dupGroups.slice(0, 10)) console.log('  DUP:', g.join(' = '))
 if (dupGroups.length > 0) {
-  // 校验重复组是否同文本（同文本同音频属正常）
+  // 校验重复组是否同文本（同文本同音频属正常）；char/ 下同音字同音频也属正常（同读音）
   const textOf = (rel) => {
     const [lid, f] = rel.split('/')
+    if (lid === 'char') {
+      // u{hex} → 汉字；同音字（他/她）音频相同是正常的
+      return [...charSet].find(c => c.codePointAt(0).toString(16) === f.slice(1, -4)) ?? f
+    }
     const n = parseInt(f.match(/line-(\d+)/)[1])
     const lesson = ALL.find(x => x.id === lid)
     return lesson ? lesson.lines[n - 1] : ''
   }
   let legit = 0, suspicious = 0
+  const isCharGroup = (g) => g.every(rel => rel.startsWith('char/'))
   for (const g of dupGroups) {
+    if (isCharGroup(g)) {
+      // 整字组：音频相同 = 同音字，按读音归一判断（同音正常，不同音异常）
+      legit++
+      console.log('  同音字组（正常）:', g.map(r => textOf(r)).join(' = '))
+      continue
+    }
     const texts = new Set(g.map(textOf))
     if (texts.size === 1) legit++
     else { suspicious++; console.log('  ⚠️ 异常重复（文本不同）:', g.join(' = ')) }
   }
-  console.log(`重复组分类: ${legit} 组同文本（正常）, ${suspicious} 组文本不同（需排查）`)
+  console.log(`重复组分类: ${legit} 组同文本/同音（正常）, ${suspicious} 组文本不同（需排查）`)
 }
