@@ -41,10 +41,21 @@ export interface DailyRec {
   lastTs: number
 }
 
+/** 课本错题：哪课哪卡答错过（重学全对后清除） */
+export interface LessonErrorRec {
+  key: string              // `${lessonId}|${cardIdx}`
+  lessonId: string
+  title: string            // 课名，错题本直接显示
+  cardIdx: number
+  count: number
+  lastWrongAt: number
+}
+
 class MathDB extends Dexie {
   attempts!: Table<AttemptRec, number>
   errors!: Table<ErrorRec, string>
   daily!: Table<DailyRec, string>
+  lessonErrors!: Table<LessonErrorRec, string>
 
   constructor() {
     super('kids-math')
@@ -52,6 +63,9 @@ class MathDB extends Dexie {
       attempts: '++id, ts, topic, g',
       errors: 'key, topic, g, lastWrongAt',
       daily: 'key, g, day',
+    })
+    this.version(2).stores({
+      lessonErrors: 'key, lessonId, lastWrongAt',
     })
   }
 }

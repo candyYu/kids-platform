@@ -23,6 +23,7 @@ export interface Topic {
   emoji: string
   desc: string
   twoStage?: boolean        // true = 先答商再答余数
+  nextTerm?: boolean        // true = 下学期内容，首页默认折叠（保护动机）
   gen: (avoid?: string) => Problem
 }
 
@@ -146,13 +147,13 @@ export const TOPICS: Topic[] = [
   // 一年级
   { id: 'mix10', g: '1', name: '10以内加减', emoji: '🌱', desc: '本学期 · 5~10的加减法', gen: mix10 },
   { id: 'add20car', g: '1', name: '进位加法', emoji: '➕', desc: '学期末 · 20以内进位加', gen: add20car },
-  { id: 'sub20borrow', g: '1', name: '退位减法', emoji: '➖', desc: '下学期 · 20以内退位减', gen: sub20borrow },
+  { id: 'sub20borrow', g: '1', name: '退位减法', emoji: '➖', desc: '下学期 · 20以内退位减', gen: sub20borrow, nextTerm: true },
   { id: 'mix20', g: '1', name: '20以内混合', emoji: '🎲', desc: '综合挑战', gen: mix20 },
   // 二年级
   { id: 'mul16', g: '2', name: '乘法口诀', emoji: '✖️', desc: '本学期 · 1~6的表内乘法', gen: mul16 },
   { id: 'div16', g: '2', name: '表内除法', emoji: '➗', desc: '本学期 · 1~6的表内除法', gen: div16 },
   { id: 'mix16', g: '2', name: '乘除混合', emoji: '🎲', desc: '综合挑战', gen: mix16 },
-  { id: 'divRem', g: '2', name: '有余数除法', emoji: '🧩', desc: '下学期 · 先商后余两步答', gen: divRem, twoStage: true },
+  { id: 'divRem', g: '2', name: '有余数除法', emoji: '🧩', desc: '下学期 · 先商后余两步答', gen: divRem, twoStage: true, nextTerm: true },
 ]
 
 export function topicsOf(g: Grade): Topic[] {

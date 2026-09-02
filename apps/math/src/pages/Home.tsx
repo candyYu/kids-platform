@@ -1,23 +1,33 @@
 // 数学首页：年级切换 + 题卡 + 今日进度
-import { Link } from 'react-router-dom'
+// 题卡点卡身=普通 10 题，点 ⏱=1 分钟计时挑战；下学期内容默认折叠（保护动机）
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/schema'
-import { topicsOf } from '@/data/topics'
+import { topicsOf, type Topic } from '@/data/topics'
 import { UNITS } from '@/data/lessons'
 import { ACTIVE_GRADE, GRADE_LABEL } from '@/data/grade'
 import { BuildBadge } from '@/components/BuildBadge'
 
 export default function Home() {
+  const navigate = useNavigate()
   const topics = topicsOf(ACTIVE_GRADE)
   const units = UNITS[ACTIVE_GRADE]
+  const [showNextTerm, setShowNextTerm] = useState(false)
   const todayAttempts = useLiveQuery(
     () => db.attempts.where('ts').above(startOfToday()).toArray(),
     [],
   )
-  const errorCount = useLiveQuery(() => db.errors.count(), [])
+  const errorCount = useLiveQuery(
+    async () => (await db.errors.count()) + (await db.lessonErrors.count()),
+    [],
+  )
 
   const done = todayAttempts?.length ?? 0
   const correct = todayAttempts?.filter(a => a.correct === 1).length ?? 0
+
+  const curTopics = topics.filter(t => !t.nextTerm)
+  const nextTopics = topics.filter(t => t.nextTerm)
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-grass-50 to-cream-100 p-6">
@@ -57,24 +67,32 @@ export default function Home() {
         </p>
       </div>
 
-      {/* 口算题卡 */}
+      {/* 口算题卡（本学期） */}
       <p className="text-child font-bold text-ink-700 max-w-md mx-auto mb-3">⚡ 口算闯关</p>
       <div className="grid grid-cols-1 gap-4 max-w-md mx-auto">
-        {topics.map(t => (
-          <Link
-            key={t.id}
-            to={`/practice/${t.id}`}
-            className="paper-card p-5 flex items-center gap-4 active:scale-95 transition"
-          >
-            <span className="text-5xl">{t.emoji}</span>
-            <span className="flex-1">
-              <span className="block text-child-lg font-bold text-ink-900">{t.name}</span>
-              <span className="block text-child text-ink-500">{t.desc}</span>
-            </span>
-            <span className="text-child font-bold text-pig-500">开始 →</span>
-          </Link>
+        {curTopics.map(t => (
+          <TopicCard key={t.id} topic={t} onOpen={() => navigate(`/practice/${t.id}`)} />
         ))}
       </div>
+
+      {/* 下学期内容：默认折叠，家长可展开 */}
+      {nextTopics.length > 0 && (
+        <div className="max-w-md mx-auto mt-4">
+          <button
+            onClick={() => setShowNextTerm(v => !v)}
+            className="w-full text-center text-child font-bold text-ink-500 bg-white/60 border-2 border-dashed border-pig-200 rounded-soft py-3 active:scale-95"
+          >
+            {showNextTerm ? '收起 ▲' : `🔒 下学期内容（${nextTopics.length} 张题卡）▼`}
+          </button>
+          {showNextTerm && (
+            <div className="grid grid-cols-1 gap-4 mt-4 opacity-80">
+              {nextTopics.map(t => (
+                <TopicCard key={t.id} topic={t} onOpen={() => navigate(`/practice/${t.id}`)} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 课本同步 */}
       <p className="text-child font-bold text-ink-700 max-w-md mx-auto mt-8 mb-3">📚 课本同步</p>
@@ -109,6 +127,28 @@ export default function Home() {
       </footer>
       <BuildBadge className="mt-2 pb-4" />
     </main>
+  )
+}
+
+/** 口算题卡：点卡身进普通模式，点 ⏱ 进 1 分钟计时挑战 */
+function TopicCard({ topic: t, onOpen }: { topic: Topic; onOpen: () => void }) {
+  return (
+    <div onClick={onOpen} className="paper-card p-5 flex items-center gap-4 active:scale-95 transition cursor-pointer">
+      <span className="text-5xl">{t.emoji}</span>
+      <span className="flex-1">
+        <span className="block text-child-lg font-bold text-ink-900">{t.name}</span>
+        <span className="block text-child text-ink-500">{t.desc}</span>
+      </span>
+      <Link
+        to={`/practice/${t.id}?t=60`}
+        onClick={e => e.stopPropagation()}
+        aria-label={`${t.name} 1 分钟计时挑战`}
+        className="shrink-0 px-3 py-2 rounded-full bg-sun-500 text-white text-sm font-bold active:scale-95"
+      >
+        ⏱ 1分钟
+      </Link>
+      <span className="text-child font-bold text-pig-500 shrink-0">开始 →</span>
+    </div>
   )
 }
 

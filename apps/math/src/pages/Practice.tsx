@@ -1,7 +1,7 @@
 // 练习页：10 题一组，大题面 + 9 键数字键盘 + 语音读题
 // 有余数除法是两步题：先答商，再答余数（按题目自带 rem 判断，错题重练也适用）
 import { useEffect, useRef, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { topicById, makeSession, numToCn, shuffle } from '@/data/topics'
 import { db, today } from '@/db/schema'
 import { speak } from '@/tts'
@@ -22,12 +22,16 @@ const RETRY_TOPIC: Topic = {
 export default function Practice() {
   const { topicId = '' } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isRetry = topicId === 'retry'
   const topic = isRetry ? RETRY_TOPIC : topicById(topicId)
+  // ?t=60 → 1 分钟计时挑战（错题重练不支持）；一次备 30 题，1 分钟做不完
+  const timed = !isRetry && searchParams.get('t') === '60'
 
   const [problems, setProblems] = useState<Problem[]>(() =>
-    topic && !isRetry ? makeSession(topic, SESSION_LEN) : [],
+    topic && !isRetry ? makeSession(topic, timed ? 30 : SESSION_LEN) : [],
   )
+  const [left, setLeft] = useState(60)
   const [loaded, setLoaded] = useState(!isRetry)   // retry 模式异步取题后置 true
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
@@ -70,6 +74,17 @@ export default function Practice() {
       if (timer.current) clearTimeout(timer.current)
     }
   }, [idx, q, stage])
+
+  // 计时挑战：60 秒倒计时，到点自动收卷
+  useEffect(() => {
+    if (!timed || finished || problems.length === 0) return
+    const iv = setInterval(() => setLeft(l => Math.max(0, l - 1)), 1000)
+    return () => clearInterval(iv)
+  }, [timed, finished, problems.length])
+
+  useEffect(() => {
+    if (timed && left === 0 && !finished) setFinished(true)
+  }, [timed, left, finished])
 
   if (!topic) {
     return (
@@ -169,7 +184,7 @@ export default function Practice() {
       // 收尾：存当日最佳星星（错题重练不计入题卡星星）
       if (!isRetry) {
         const stars = correctCount >= 10 ? 3 : correctCount >= 8 ? 2 : correctCount >= 6 ? 1 : 0
-        const key = `${today()}|${topic.id}`
+        const key = `${today()}|${topic.id}${timed ? '#timed' : ''}`
         void db.daily.get(key).then(prev => {
           void db.daily.put({
             key,
@@ -198,16 +213,18 @@ export default function Practice() {
           {'⭐'.repeat(stars)}{'☆'.repeat(3 - stars)}
         </h1>
         <p className="text-child-lg text-ink-700 mb-1">
-          答对 {correctCount} / {problems.length} 题
+          {timed ? `⏱ 1 分钟答对 ${correctCount} 题` : `答对 ${correctCount} / ${problems.length} 题`}
         </p>
-        <p className="text-child text-ink-500 mb-8">最高连对 {bestStreak} 题</p>
+        <p className="text-child text-ink-500 mb-8">
+          {timed ? '课标要求：每分钟 8~10 题 · ' : ''}最高连对 {bestStreak} 题
+        </p>
         <div className="flex gap-3">
           {!isRetry && (
             <button
-              onClick={() => { setProblems(makeSession(topic, SESSION_LEN)); setIdx(0); setInput(''); setStage(0); setFeedback(null); setCorrectCount(0); setStreak(0); setBestStreak(0); setFinished(false) }}
+              onClick={() => { setProblems(makeSession(topic, timed ? 30 : SESSION_LEN)); setIdx(0); setInput(''); setStage(0); setFeedback(null); setCorrectCount(0); setStreak(0); setBestStreak(0); setLeft(60); setFinished(false) }}
               className="btn-pig px-8 py-3"
             >
-              再练一组
+              {timed ? '再挑战一次' : '再练一组'}
             </button>
           )}
           <button onClick={() => navigate('/')} className="px-8 py-3 rounded-soft bg-white text-pig-600 font-bold border-2 border-pig-200 active:scale-95">
@@ -225,18 +242,22 @@ export default function Practice() {
 
   return (
     <main className="min-h-screen p-6 flex flex-col items-center">
-      {/* 顶栏：进度 + 退出 */}
+      {/* 顶栏：进度 + 退出（计时模式显示倒计时） */}
       <div className="w-full max-w-md flex items-center justify-between mb-4">
         <button onClick={() => navigate('/')} className="text-child text-pig-500 font-bold px-2">← 退出</button>
-        <div className="flex gap-1">
-          {problems.map((_, i) => (
-            <span
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full ${i < idx ? 'bg-grass-500' : i === idx ? 'bg-pig-500' : 'bg-pig-100'}`}
-            />
-          ))}
-        </div>
-        <span className="text-child text-ink-500 font-bold">{idx + 1}/{problems.length}</span>
+        {timed ? (
+          <span className={`text-child-lg font-bold ${left <= 10 ? 'text-chili-600' : 'text-pig-600'}`}>⏱ {left}s</span>
+        ) : (
+          <div className="flex gap-1">
+            {problems.map((_, i) => (
+              <span
+                key={i}
+                className={`w-2.5 h-2.5 rounded-full ${i < idx ? 'bg-grass-500' : i === idx ? 'bg-pig-500' : 'bg-pig-100'}`}
+              />
+            ))}
+          </div>
+        )}
+        <span className="text-child text-ink-500 font-bold">{timed ? `已做 ${idx} 题` : `${idx + 1}/${problems.length}`}</span>
       </div>
 
       {/* 题面 */}
