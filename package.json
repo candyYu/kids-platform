@@ -6,8 +6,9 @@
     "dev": "pnpm --filter @kids/web dev",
     "dev:music": "pnpm --filter @kids/music dev",
     "dev:yuwen": "pnpm --filter @kids/yuwen dev",
-    "build": "pnpm -r build && rm -rf dist && mkdir dist && cp -r apps/web/dist/. dist/ && mkdir -p dist/music && cp -r apps/music/dist/. dist/music/ && mkdir -p dist/yuwen && cp -r apps/yuwen/dist/. dist/yuwen/",
-    "build:web": "pnpm --filter @kids/web build"
+    "build": "pnpm -r build && rm -rf dist && mkdir dist && cp -r apps/web/dist/. dist/ && mkdir -p dist/music && cp -r apps/music/dist/. dist/music/ && mkdir -p dist/yuwen && cp -r apps/yuwen/dist/. dist/yuwen/ && mkdir -p dist/math && cp -r apps/math/dist/. dist/math/",
+    "build:web": "pnpm --filter @kids/web build",
+    "dev:math": "pnpm --filter @kids/math dev"
   },
   "packageManager": "pnpm@11.20.0",
   "engines": {

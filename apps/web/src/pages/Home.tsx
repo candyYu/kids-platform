@@ -28,11 +28,12 @@ function Card({ href, bg, emoji, title, subtitle }: CardProps) {
 }
 
 export default function Home() {
-  // 本地 dev：music 在 5174，yuwen 在 5175
-  // 部署到 GitHub Pages：/music → music SPA, /yuwen → yuwen SPA（同源）
+  // 本地 dev：music 在 5174，yuwen 在 5175，math 在 5176
+  // 部署到 GitHub Pages：/music → music SPA, /yuwen → yuwen SPA, /math → math SPA（同源）
   const isDev = import.meta.env.DEV
   const musicHref = isDev ? 'http://127.0.0.1:5174' : '/music'
   const yuwenHref = isDev ? 'http://127.0.0.1:5175' : '/yuwen'
+  const mathHref = isDev ? 'http://127.0.0.1:5176' : '/math'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream-50 to-pig-50 p-4 sm:p-6 flex flex-col">
@@ -59,10 +60,11 @@ export default function Home() {
           subtitle="听音 · 唱歌 · 视唱练耳"
         />
         <Card
-          bg="bg-gradient-to-br from-sea-300 to-sea-400"
+          href={mathHref}
+          bg="bg-gradient-to-br from-grass-400 to-grass-600"
           emoji="🔢"
           title="小小数学家"
-          subtitle="敬请期待"
+          subtitle="口算 · 闯关 · 错题本"
         />
         <Card
           bg="bg-gradient-to-br from-sun-300 to-sun-400"
