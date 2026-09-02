@@ -4,6 +4,7 @@
 // 认字点读：优先 /audio/reading/char/u{hex}.mp3 整字 mp3（pad 上 speechSynthesis 无中文
 //       voice 会静默无声，必须走 mp3——同 tts.ts 的 mp3 优先原则），缺文件回退 speakHanzi
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Lesson } from '@/data/types'
 import { getLessonText, lessonChars, ACTIVE_GRADE } from '@/data'
 import { db } from '@/db/schema'
@@ -126,7 +127,11 @@ export default function ReadingLesson({ lesson }: { lesson: Lesson }) {
     <main className="min-h-screen bg-cream-50 pb-24">
       <style>{`audio{display:none}`}</style>
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-pig-100 p-4">
-        <div className="text-child font-bold text-sea-900">{lesson.code} · {lesson.name}</div>
+        <div className="flex items-center gap-3">
+          {/* 内嵌 WebView 没有浏览器返回键，必须自带返回入口 */}
+          <Link to="/map" aria-label="返回课程地图" className="text-pig-700 text-2xl leading-none shrink-0">←</Link>
+          <div className="text-child font-bold text-sea-900 truncate">{lesson.code} · {lesson.name}</div>
+        </div>
         <div className="flex gap-1 mt-3">
           {STAGES.map((s, i) => (
             <button
