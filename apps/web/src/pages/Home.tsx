@@ -1,4 +1,4 @@
-// 首页：学科平级入口（语文 / 音乐已上线；数学 / 英语 敬请期待占位）
+// 首页：学科平级入口（语文 / 音乐 / 数学 / 英语 已全部上线）
 // 年级选择收在语文应用内部（HomePage 顶部的年级切换，localStorage 记住上次年级）
 // 设计：佩奇风格 + 圆润无尖角 + 大色块 + 不需要文字输入
 // 自适应布局：
@@ -34,6 +34,7 @@ export default function Home() {
   const musicHref = isDev ? 'http://127.0.0.1:5174' : '/music'
   const yuwenHref = isDev ? 'http://127.0.0.1:5175' : '/yuwen'
   const mathHref = isDev ? 'http://127.0.0.1:5176' : '/math'
+  const englishHref = isDev ? 'http://127.0.0.1:5178' : '/english'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream-50 to-pig-50 p-4 sm:p-6 flex flex-col">
@@ -67,10 +68,11 @@ export default function Home() {
           subtitle="口算 · 闯关 · 错题本"
         />
         <Card
-          bg="bg-gradient-to-br from-sun-300 to-sun-400"
+          href={englishHref}
+          bg="bg-gradient-to-br from-sky-400 to-sky-600"
           emoji="🔤"
           title="小小英语家"
-          subtitle="敬请期待"
+          subtitle="点读 · 句子 · 练一练"
         />
       </div>
 

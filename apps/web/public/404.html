@@ -16,6 +16,7 @@
         if (p === '/yuwen' || p.indexOf('/yuwen/') === 0) app = '/yuwen/index.html'
         else if (p === '/music' || p.indexOf('/music/') === 0) app = '/music/index.html'
         else if (p === '/math' || p.indexOf('/math/') === 0) app = '/math/index.html'
+        else if (p === '/english' || p.indexOf('/english/') === 0) app = '/english/index.html'
         else app = '/index.html'
         var full = p + l.search + l.hash
         l.replace(app + '?p=' + encodeURIComponent(full))
