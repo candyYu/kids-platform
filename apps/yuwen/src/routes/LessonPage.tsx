@@ -11,6 +11,7 @@ import { DictationStage } from '@/components/stages/DictationStage'
 import { QuizStage } from '@/components/stages/QuizStage'
 import { ChallengeStage } from '@/components/stages/ChallengeStage'
 import { updateStreak } from '@/utils/badges'
+import { addStars, touchStreak } from '@kids/core'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 type Stage = 'intro' | 'rule' | 'demo' | 'dictation' | 'quiz' | 'challenge' | 'done'
@@ -130,7 +131,12 @@ export default function LessonPage() {
         {stage === 'challenge' && (
           <ChallengeStage
             lesson={legacyLesson}
-            onComplete={() => setStage('done')}
+            onComplete={() => {
+              // 平台激励：通关一课 +10⭐（@kids/core 每日上限防刷）+ 打卡
+              addStars(10)
+              touchStreak()
+              setStage('done')
+            }}
           />
         )}
         {stage === 'done' && <DonePanel lessonName={lesson.name} onBack={() => navigate('/map')} />}

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Home from './pages/Home'
+import RewardsPage from './pages/RewardsPage'
 import { isUnlocked, setUnlocked } from './auth/gate'
 
 // 密码页：6 位数字密码，存 localStorage（7 天有效）+ sessionStorage（当前标签页）
@@ -12,8 +13,20 @@ export default function App() {
   const [unlocked, setUnlockedState] = useState<boolean>(() => isUnlocked())
   const [input, setInput] = useState('')
   const [error, setError] = useState(false)
+  // hash 变化（首页 ↔ 奖励页）时重渲染
+  const [hashTick, setHashTick] = useState(0)
+  useEffect(() => {
+    const onChange = () => setHashTick((t) => t + 1)
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+  void hashTick
 
-  if (unlocked) return <Home />
+  if (unlocked) {
+    // hash 路由：#/rewards → 奖励页；其余 → 首页（无需 react-router，GitHub Pages 零配置）
+    if (window.location.hash === '#/rewards') return <RewardsPage />
+    return <Home />
+  }
 
   const press = (n: string) => {
     if (input.length >= 6) return

@@ -1,9 +1,13 @@
 // 单元页：学单词（点读）→ 学句子（点读）→ 练一练（听音选图/看图选词/听音选词）
 // 课本活动对应：Look, listen and chant（点读）+ Listen and do / Let's play（练一练）
+// 激励埋点：点读=首次学(SRS learn)+打卡；练一练答对=+1⭐+SRS复习结果
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { unitById, type EnWord, type EnUnit } from '@/data/units'
 import { speakEn } from '@/audio/tts'
+import { addStars, touchStreak, learn as srsLearn, reviewResult } from '@kids/core'
+
+const srsKey = (en: string) => `en:${en}`
 
 type Stage = 'words' | 'sents' | 'quiz'
 
@@ -12,6 +16,8 @@ function WordGrid({ unit }: { unit: EnUnit }) {
   const [playing, setPlaying] = useState('')
   const tap = async (w: EnWord) => {
     setPlaying(w.en)
+    srsLearn(srsKey(w.en), 'en', w.en) // 首次点读 = 学会这个字（1 天后进复习队列）
+    touchStreak()
     await speakEn(w.en, 'word')
     setTimeout(() => setPlaying((p) => (p === w.en ? '' : p)), 600)
   }
@@ -44,6 +50,7 @@ function SentList({ unit }: { unit: EnUnit }) {
   const [playing, setPlaying] = useState('')
   const tap = async (en: string) => {
     setPlaying(en)
+    touchStreak()
     await speakEn(en, 'sent')
     setTimeout(() => setPlaying((p) => (p === en ? '' : p)), 600)
   }
@@ -129,6 +136,8 @@ function Quiz({ unit, onExit }: { unit: EnUnit; onExit: () => void }) {
   const pick = async (w: EnWord) => {
     if (done) return
     if (w.en === q.target.en) {
+      addStars(1) // 答对 +1 星（每日上限防刷）
+      reviewResult(srsKey(q.target.en), true) // 学过的词：答对升盒，间隔拉长
       setDone(true) // 本题完成，庆祝后下一题
       setTimeout(() => {
         setDone(false)
@@ -141,6 +150,7 @@ function Quiz({ unit, onExit }: { unit: EnUnit; onExit: () => void }) {
         }
       }, 650)
     } else {
+      reviewResult(srsKey(q.target.en), false) // 答错：回炉，明天重来
       setWrong(w.en)
       setTimeout(() => setWrong(''), 450)
     }

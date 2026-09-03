@@ -140,6 +140,14 @@ export default function HomePage() {
             <p className="text-child font-bold">古诗</p>
             <p className="text-xs text-pig-400 mt-0.5">带拼音 · 听读</p>
           </Link>
+          <Link
+            to="/storybook"
+            className="bg-white text-chili-600 p-4 rounded-bubble shadow border-2 border-chili-300 active:scale-95"
+          >
+            <p className="text-3xl mb-1">📚</p>
+            <p className="text-child font-bold">绘本共读</p>
+            <p className="text-xs text-chili-400 mt-0.5">亲子 · 读后问答</p>
+          </Link>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 packages:
   - 'apps/*'
+  - 'packages/*'
 
 # pnpm 11 新格式：allowBuilds（旧的 onlyBuiltDependencies 已废弃）
 allowBuilds:

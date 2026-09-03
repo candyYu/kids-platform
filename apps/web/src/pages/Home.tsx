@@ -1,9 +1,10 @@
-// 首页：学科平级入口（语文 / 音乐 / 数学 / 英语 已全部上线）
+// 首页：学科平级入口（语文 / 音乐 / 数学 / 英语 已全部上线）+ 平台激励条
 // 年级选择收在语文应用内部（HomePage 顶部的年级切换，localStorage 记住上次年级）
 // 设计：佩奇风格 + 圆润无尖角 + 大色块 + 不需要文字输入
 // 自适应布局：
 //   < 640px：2×2 网格（手机）
 //   >= 640px：2×2 网格略大（平板 / 电脑）
+import { getStars, getStreak } from '@kids/core'
 
 interface CardProps {
   href?: string  // 无 href = 敬请期待占位（不可点）
@@ -43,6 +44,21 @@ export default function Home() {
         <h1 className="text-3xl sm:text-4xl font-bold text-pig-700">宝宝学习乐园</h1>
         <p className="text-sm sm:text-base text-pig-500 mt-1">想学什么呀？</p>
       </header>
+
+      {/* 平台激励条：全平台共享的星星 / 连续天数 / 奖励兑换（@kids/core，同域 localStorage） */}
+      <div className="flex justify-center gap-2 mb-6">
+        <a href="#/rewards" className="inline-flex items-center gap-1.5 bg-white/80 border-2 border-sun-200 px-4 py-2 rounded-full text-sm font-bold text-sun-700 shadow-card active:scale-95">
+          ⭐ {getStars()}
+        </a>
+        {getStreak().current > 0 && (
+          <span className="inline-flex items-center gap-1 bg-white/80 border-2 border-chili-500/30 px-4 py-2 rounded-full text-sm font-bold text-chili-600 shadow-card">
+            🔥 {getStreak().current} 天
+          </span>
+        )}
+        <a href="#/rewards" className="inline-flex items-center gap-1 bg-gradient-to-r from-pig-400 to-pig-500 px-4 py-2 rounded-full text-sm font-bold text-white shadow-card active:scale-95">
+          🎁 我的奖励
+        </a>
+      </div>
 
       {/* 学科平级 2×2 */}
       <div className="flex-1 grid grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto w-full content-center">
