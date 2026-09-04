@@ -21,7 +21,7 @@ const src = readFileSync(join(ROOT, 'src/data/storybooks.ts'), 'utf-8')
 function extractStorybooks() {
   const books = []
   // 每本：id: 'xxx', ... pages: [ { text: '...' }, ... ]
-  const bookRe = /id:\s*['"]([\w-]+)['"][\s\S]*?pages:\s*\[([\s\S]*?)\]/g
+  const bookRe = /id:\s*['"]([\w-]+)['"][\s\S]*?pages:\s*\[([\s\S]*?)\]\s*,\s*quiz/g
   const textRe = /text:\s*'([^']+)'/g
   let m
   while ((m = bookRe.exec(src))) {
