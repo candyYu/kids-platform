@@ -243,6 +243,97 @@ export const STORYBOOKS: Storybook[] = [
     ],
     moral: '贪心的人，最后什么都得不到。',
   },
+  // ---- 三国演义（罗贯中原著元末明初，公版；按一年级识字量改写）----
+  {
+    id: 'peach-oath',
+    title: '桃园结义',
+    emoji: '🌸',
+    pages: [
+      { text: '东汉末年，天下大乱，老百姓的日子很苦。', scene: ['🏯', '🌪️', '😟'], bg: 'from-cream-50 to-orange-100' },
+      { text: '卖草鞋的刘备，遇见了关羽和张飞。', scene: ['🧑', '👟', '🧔', '😠'], bg: 'from-cream-50 to-sun-50' },
+      { text: '三个人谈得投机，都想为天下做点事。', scene: ['💬', '✨', '🤝'], bg: 'from-sun-50 to-sun-100' },
+      { text: '他们在桃花园里，结拜为兄弟。', scene: ['🌸', '🌸', '🌸'], bg: 'from-pink-50 to-pink-100' },
+      { text: '刘备是大哥，关羽是二哥，张飞是三弟。', scene: ['🧑', '🧔', '😠'], bg: 'from-cream-50 to-pink-50' },
+      { text: '从此，三兄弟一起打天下，谁也不离开谁。', scene: ['🤝', '💪', '❤️'], bg: 'from-pink-50 to-sun-50' },
+    ],
+    quiz: [
+      { q: '三兄弟在哪里结拜的？', options: ['桃花园', '梅花园', '竹林'], answer: 0 },
+      { q: '刘备是三兄弟里的老几？', options: ['大哥', '二哥', '三弟'], answer: 0 },
+    ],
+    moral: '真心的朋友，会互相帮助，一起进步。',
+  },
+  {
+    id: 'three-visits',
+    title: '三顾茅庐',
+    emoji: '🏠',
+    pages: [
+      { text: '刘备听说诸葛亮很有才能，想去请他帮忙。', scene: ['🧑', '➡️', '🧑‍🎓'], bg: 'from-grass-50 to-sky-50' },
+      { text: '第一次去，诸葛亮不在家，扑了个空。', scene: ['🏠', '❌', '😔'], bg: 'from-cream-50 to-sky-50' },
+      { text: '第二次去，下着大雪，还是没见到。', scene: ['❄️', '❌', '🥶'], bg: 'from-sky-100 to-sky-200' },
+      { text: '张飞说：“哪用这么麻烦！”刘备摇了摇头。', scene: ['😠', '💬', '🙅'], bg: 'from-cream-50 to-orange-50' },
+      { text: '第三次去，诸葛亮在睡觉，刘备在门外安静地等。', scene: ['😴', '🚪', '⏳'], bg: 'from-cream-50 to-sun-50' },
+      { text: '诸葛亮被感动了，答应帮刘备打天下。', scene: ['🧑‍🎓', '🤝', '✨'], bg: 'from-sun-50 to-grass-50' },
+    ],
+    quiz: [
+      { q: '刘备去了几次才见到诸葛亮？', options: ['三次', '一次', '两次'], answer: 0 },
+      { q: '第三次去的时候，诸葛亮在做什么？', options: ['睡觉', '吃饭', '练武'], answer: 0 },
+    ],
+    moral: '真心诚意地请人帮忙，别人才会愿意帮助你。',
+  },
+  {
+    id: 'straw-boats',
+    title: '草船借箭',
+    emoji: '⛵',
+    pages: [
+      { text: '周瑜想为难诸葛亮，让他十天造十万支箭。', scene: ['👨‍✈️', '😏', '🏹'], bg: 'from-sky-50 to-orange-50' },
+      { text: '诸葛亮说：“只要三天。”', scene: ['🧑‍🎓', '💬', '✋'], bg: 'from-cream-50 to-sky-50' },
+      { text: '他悄悄准备了几十条船，船上扎满草人。', scene: ['⛵', '🌾', '🌾'], bg: 'from-sky-50 to-grass-50' },
+      { text: '第三天大雾，船队开到曹操军营附近。', scene: ['⛵', '🌫️', '⚓'], bg: 'from-sky-100 to-sky-200' },
+      { text: '曹兵看不清，只顾放箭，箭全扎在草人上。', scene: ['🏹', '➡️', '🌾'], bg: 'from-sky-50 to-orange-100' },
+      { text: '诸葛亮带着满船的箭，开开心心回家了。', scene: ['⛵', '🏹', '😄'], bg: 'from-grass-50 to-sun-50' },
+    ],
+    quiz: [
+      { q: '诸葛亮的箭是怎么来的？', options: ['用草船借来的', '自己造的', '花钱买的'], answer: 0 },
+      { q: '借箭那天，江上是什么天气？', options: ['大雾', '大晴天', '下大雨'], answer: 0 },
+    ],
+    moral: '遇到难题，多动脑筋，办法总比困难多。',
+  },
+  {
+    id: 'plum-forest',
+    title: '望梅止渴',
+    emoji: '🍏',
+    pages: [
+      { text: '曹操带兵赶路，太阳火辣辣的。', scene: ['😏', '☀️', '🥵'], bg: 'from-sun-50 to-orange-100' },
+      { text: '走了很久，水喝完了，士兵们渴极了。', scene: ['🥵', '💧', '❌'], bg: 'from-orange-50 to-orange-100' },
+      { text: '大家走不动了，眼看就要倒下。', scene: ['😵', '👣', '😰'], bg: 'from-cream-50 to-orange-50' },
+      { text: '曹操说：“前面有一大片梅林，梅子又酸又甜！”', scene: ['😏', '💬', '🍏'], bg: 'from-cream-50 to-sun-50' },
+      { text: '士兵们一想到酸梅子，口水都流出来了。', scene: ['😋', '🤤', '🏃'], bg: 'from-sun-50 to-grass-50' },
+      { text: '大家越走越快，终于走到了有水的地方。', scene: ['💧', '😄', '🏆'], bg: 'from-sky-50 to-grass-50' },
+    ],
+    quiz: [
+      { q: '曹操说前面有什么？', options: ['一大片梅林', '一个大桃园', '一口水井'], answer: 0 },
+      { q: '士兵们想到梅子，为什么会流口水？', options: ['梅子是酸的', '梅子很贵', '他们没见过梅子'], answer: 0 },
+    ],
+    moral: '心里想着美好的目标，再难的路也能走下去。',
+  },
+  {
+    id: 'empty-city',
+    title: '空城计',
+    emoji: '🏰',
+    pages: [
+      { text: '敌人大军来攻城，诸葛亮身边没有兵。', scene: ['⚔️', '➡️', '😱'], bg: 'from-orange-50 to-red-100' },
+      { text: '大家都慌了，诸葛亮却不慌不忙。', scene: ['😨', '🧑‍🎓', '😌'], bg: 'from-cream-50 to-sky-50' },
+      { text: '他叫人大开城门，自己坐在城楼上弹琴。', scene: ['🚪', '🎶', '🎼'], bg: 'from-sky-50 to-grass-50' },
+      { text: '敌人在城下看，越看越觉得奇怪。', scene: ['🤔', '❓', '👀'], bg: 'from-cream-50 to-orange-50' },
+      { text: '“他这么镇定，城里一定藏着兵！”', scene: ['⚔️', '💭', '😨'], bg: 'from-orange-50 to-red-50' },
+      { text: '敌人吓得退兵了，一座空城保住了。', scene: ['🏃', '💨', '🏰'], bg: 'from-sky-50 to-grass-50' },
+    ],
+    quiz: [
+      { q: '诸葛亮在城楼上做什么？', options: ['弹琴', '睡觉', '练武'], answer: 0 },
+      { q: '敌人为什么退兵了？', options: ['以为城里有埋伏', '天黑了', '肚子饿了'], answer: 0 },
+    ],
+    moral: '遇到危险，冷静和智慧比害怕有用。',
+  },
 ]
 
 export function storyById(id: string): Storybook | undefined {
