@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { storyById, storyAudio, markRead, type StoryPage } from '@/data/storybooks'
+import { STORYBOOK_RUBIES, type Ruby } from '@/data/storybook-rubies'
 import { playFile, stopAudio } from '@/audio/tts'
 import { addStars, touchStreak } from '@kids/core'
 
@@ -23,6 +24,26 @@ function SceneView({ page }: { page: StoryPage }) {
         </div>
       )}
     </div>
+  )
+}
+
+// 逐字注音渲染：拼音在上（粉）、汉字在下，部编课本排版（ruby）
+// py 为空的项是标点，直接显示；无注音数据的书回退原文
+function RubyText({ rubies, fallback }: { rubies?: Ruby[]; fallback: string }) {
+  if (!rubies) return <>{fallback}</>
+  return (
+    <>
+      {rubies.map((c, i) =>
+        c.py ? (
+          <ruby key={i}>
+            {c.hz}
+            <rt className="text-[0.52em] font-bold text-pig-500 leading-none">{c.py}</rt>
+          </ruby>
+        ) : (
+          <span key={i}>{c.hz}</span>
+        ),
+      )}
+    </>
   )
 }
 
@@ -179,7 +200,9 @@ export default function StoryReader() {
         className="bg-white rounded-bubble shadow-card px-5 py-4 mb-3 border-2 border-pig-200 active:scale-95 flex items-center gap-3"
       >
         <span className="text-3xl shrink-0">🔊</span>
-        <p className="text-child font-bold text-sea-900 text-left leading-relaxed flex-1">{p.text}</p>
+        <p className="text-child font-bold text-sea-900 text-left leading-[2] flex-1 tracking-wide">
+          <RubyText rubies={STORYBOOK_RUBIES[book.id]?.[page]} fallback={p.text} />
+        </p>
       </button>
 
       {/* 翻页 */}
