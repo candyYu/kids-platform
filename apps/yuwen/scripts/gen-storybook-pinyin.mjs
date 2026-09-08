@@ -68,6 +68,15 @@ const OVERRIDE = {
   '长高了': ['zhǎng', null, null],
   '干了一整天': ['gàn', null, null, null, null], // 做事义，非 gān
   '结拜为兄弟': [null, null, 'wéi', null, null], // "成为"义读 wéi
+  // 神话 6 本新增修正（2026-09）：轻声 / 助词得地 / 必须义 děi / 种植 zhòng / 生长 zhǎng
+  '斧头': [null, 'tou'],                    // 轻声，同"锄头"
+  '哗哗地': [null, null, 'de'],             // 助词"地"（状语），库默认 dì
+  '得把': ['děi', null],                    // "我得把天补好"必须义，库默认 dé
+  '种庄稼': ['zhòng', null, null],          // 种植义动词，库默认 zhǒng
+  '一下子': [null, null, 'zi'],             // 轻声，库给 zǐ
+  '长出了': ['zhǎng', null, null],          // 生长义，库给 cháng
+  '长成了': ['zhǎng', null, null],          // 生长义，库给 cháng
+  '烤得': [null, 'de'],                     // 补语助词，库默认 dé
 }
 
 const isHan = (c) => /[\u4e00-\u9fff]/.test(c)

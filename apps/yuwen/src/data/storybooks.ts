@@ -334,6 +334,115 @@ export const STORYBOOKS: Storybook[] = [
     ],
     moral: '遇到危险，冷静和智慧比害怕有用。',
   },
+  // ---- 中国古代神话（《山海经》《淮南子》等古籍公版，文本原创改写；大禹治水/羿射九日为人教二上课文，课内衔接）----
+  {
+    id: 'pangu-world',
+    title: '盘古开天',
+    emoji: '🌌',
+    pages: [
+      { text: '很久很久以前，没有天，也没有地，到处黑乎乎的。', scene: ['🌌', '🌑'], bg: 'from-slate-200 to-indigo-200' },
+      { text: '宇宙像一个很大很大的鸡蛋，巨人盘古就睡在里面。', scene: ['😴', '🥚', '🌌'], bg: 'from-indigo-100 to-slate-200' },
+      { text: '盘古醒了！他拿起一把大斧头，用力一劈。', scene: ['😄', '🪓', '💥'], bg: 'from-sun-50 to-orange-100' },
+      { text: '轻的东西慢慢往上飘，变成了蓝蓝的天。', scene: ['☁️', '⬆️', '💙'], bg: 'from-sky-100 to-sky-200' },
+      { text: '重的东西慢慢往下落，变成了厚厚的地。', scene: ['🌍', '⬇️', '⛰️'], bg: 'from-cream-50 to-grass-50' },
+      { text: '盘古头顶着天，脚踩着地，天地再也合不上了。', scene: ['🌌', '⛰️', '💪'], bg: 'from-indigo-100 to-grass-50' },
+    ],
+    quiz: [
+      { q: '盘古用什么劈开了天地？', options: ['大斧头', '大锤子', '大剪刀'], answer: 0 },
+      { q: '轻的东西飘上去，变成了什么？', options: ['天', '地', '大山'], answer: 0 },
+    ],
+    moral: '盘古用力分开天地，伟大的事情要努力做到底。',
+  },
+  {
+    id: 'nuwa-mend-sky',
+    title: '女娲补天',
+    emoji: '🌈',
+    pages: [
+      { text: '天上破了一个大洞，大雨哗哗地下个不停。', scene: ['🌧️', '🕳️', '😰'], bg: 'from-slate-200 to-sky-200' },
+      { text: '大水淹了房子，大家只好逃到山上。', scene: ['🌊', '🏠', '⛰️'], bg: 'from-sky-100 to-sky-200' },
+      { text: '女娲难过极了："我得把天补好！"', scene: ['😔', '💬', '💪'], bg: 'from-cream-50 to-sun-50' },
+      { text: '她跑遍大山，捡来许许多多五颜六色的石头。', scene: ['🪨', '🌈', '⛰️'], bg: 'from-grass-50 to-pink-100' },
+      { text: '她把石头炼成亮晶晶的石浆，一点一点补天上的洞。', scene: ['🔥', '✨', '🌈'], bg: 'from-orange-50 to-red-100' },
+      { text: '天洞补好了！彩虹挂在天上，大家又笑了。', scene: ['🌈', '😊', '🎉'], bg: 'from-sky-50 to-pink-50' },
+    ],
+    quiz: [
+      { q: '女娲用什么补天？', options: ['五颜六色的石头', '白白的云朵', '大片的树叶'], answer: 0 },
+      { q: '天补好以后，天上多了一个什么？', options: ['彩虹', '大风', '大山'], answer: 0 },
+    ],
+    moral: '女娲不怕辛苦，勇敢地帮助了大家。',
+  },
+  {
+    id: 'yu-flood',
+    title: '大禹治水',
+    emoji: '🌊',
+    pages: [
+      { text: '很多很多年前，大水淹了田地和房子。', scene: ['🌊', '🌾', '🏠'], bg: 'from-sky-100 to-sky-200' },
+      { text: '大家都很害怕，天天盼着有人来治水。', scene: ['😟', '❓', '🌊'], bg: 'from-cream-50 to-orange-50' },
+      { text: '大禹说："别怕，我来治水！"', scene: ['🧑', '💬', '💪'], bg: 'from-cream-50 to-sun-50' },
+      { text: '他带着大家挖河道，把大水引进大海。', scene: ['🧑', '⛏️', '🌊'], bg: 'from-sky-50 to-grass-50' },
+      { text: '治水十三年，他三次路过家门，都没进去。', scene: ['🚪', '👀', '👣'], bg: 'from-cream-50 to-orange-50' },
+      { text: '大水终于流进了大海，大家又能种庄稼了。', scene: ['🌊', '😊', '🌾'], bg: 'from-grass-50 to-sun-50' },
+    ],
+    quiz: [
+      { q: '大禹治水用了多少年？', options: ['十三年', '三天', '三个月'], answer: 0 },
+      { q: '三次路过家门，大禹进去了吗？', options: ['没有，接着去治水', '进去住了三天', '再也不出门了'], answer: 0 },
+    ],
+    moral: '为大家做事的人，大家会一直记得他。',
+  },
+  {
+    id: 'yi-nine-suns',
+    title: '羿射九日',
+    emoji: '🏹',
+    pages: [
+      { text: '有一天，天上一下子出现了十个太阳。', scene: ['☀️', '☀️', '☀️'], bg: 'from-sun-50 to-orange-100' },
+      { text: '庄稼烤焦了，河水也晒干了，大地烫烫的。', scene: ['🥵', '🌾', '💧'], bg: 'from-orange-50 to-red-100' },
+      { text: '神箭手羿拉开大弓："别怕，看我的！"', scene: ['🏹', '💪', '💬'], bg: 'from-sun-50 to-sky-50' },
+      { text: '嗖！嗖！嗖！他一连射下了九个太阳。', scene: ['🏹', '💨', '☀️'], bg: 'from-orange-50 to-sun-100' },
+      { text: '最后一个太阳再也不敢调皮了，每天从东边升起。', scene: ['☀️', '😨', '🌅'], bg: 'from-sun-50 to-orange-50' },
+      { text: '天气不冷也不热了，大地又长出了绿绿的庄稼。', scene: ['🌱', '😊', '☀️'], bg: 'from-grass-50 to-sky-50' },
+    ],
+    quiz: [
+      { q: '天上本来有几个太阳？', options: ['十个', '一个', '九个'], answer: 0 },
+      { q: '羿射掉了几个太阳？', options: ['九个', '一个', '十个'], answer: 0 },
+    ],
+    moral: '有本领的人，用本领帮助大家。',
+  },
+  {
+    id: 'jingwei-sea',
+    title: '精卫填海',
+    emoji: '🐦',
+    pages: [
+      { text: '炎帝有个小女儿，名字叫女娃。', scene: ['👧', '🌸', '❤️'], bg: 'from-pink-50 to-sun-50' },
+      { text: '女娃坐着小船出海玩，大风吹翻了小船。', scene: ['⛵', '💨', '😰'], bg: 'from-sky-100 to-sky-200' },
+      { text: '女娃变成了小鸟，名字叫精卫。', scene: ['🐦', '✨', '😢'], bg: 'from-pink-50 to-sky-50' },
+      { text: '精卫下决心："我要把大海填平！"', scene: ['🐦', '💬', '💪'], bg: 'from-cream-50 to-pink-50' },
+      { text: '她天天叼来小石子和小树枝，扔进大海。', scene: ['🐦', '🪨', '🌿'], bg: 'from-sky-50 to-grass-50' },
+      { text: '一天又一天，一年又一年，精卫从不停下。', scene: ['🐦', '🌅', '🌊'], bg: 'from-sun-50 to-sky-100' },
+    ],
+    quiz: [
+      { q: '女娃变成了什么？', options: ['小鸟精卫', '小鱼', '大树'], answer: 0 },
+      { q: '精卫叼什么去填大海？', options: ['小石子和小树枝', '糖果和饼干', '大树叶'], answer: 0 },
+    ],
+    moral: '认准了目标，一天一天坚持，就会有希望。',
+  },
+  {
+    id: 'kuafu-sun',
+    title: '夸父追日',
+    emoji: '🏃',
+    pages: [
+      { text: '巨人夸父想："要是能追上太阳，该多好啊！"', scene: ['🏃', '☀️', '💭'], bg: 'from-sun-50 to-orange-100' },
+      { text: '他撒开长腿，朝着太阳追呀追。', scene: ['🏃', '☀️', '💨'], bg: 'from-orange-50 to-sun-50' },
+      { text: '他跑过大山，跑过大河，一直不停。', scene: ['⛰️', '🌊', '🏃'], bg: 'from-grass-50 to-sky-100' },
+      { text: '太阳烤得他好渴好渴，他把黄河的水喝干了。', scene: ['🥵', '💧', '😮'], bg: 'from-orange-50 to-sun-100' },
+      { text: '还是不解渴，他又向大湖跑去。', scene: ['🥵', '🏃', '💧'], bg: 'from-sun-50 to-sky-100' },
+      { text: '还没跑到，夸父就渴倒在路上。他的手杖长成了一大片桃林。', scene: ['🍑', '🌳', '🌸'], bg: 'from-pink-50 to-sun-50' },
+    ],
+    quiz: [
+      { q: '夸父在追什么？', options: ['太阳', '月亮', '大风'], answer: 0 },
+      { q: '夸父的手杖变成了什么？', options: ['一大片桃林', '一座大山', '一条大河'], answer: 0 },
+    ],
+    moral: '追着梦想跑的人，会给大家留下甜美的果实。',
+  },
 ]
 
 export function storyById(id: string): Storybook | undefined {
