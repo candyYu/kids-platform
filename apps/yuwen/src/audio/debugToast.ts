@@ -4,6 +4,9 @@ let toastEl: HTMLDivElement | null = null
 
 export function showDebugToast(msg: string, color: 'green' | 'orange' | 'red' = 'green') {
   if (typeof document === 'undefined') return
+  // 仅 dev 显示：这是开发期排查音频命中的临时工具，生产 build 里 DEV=false，
+  // minifier 会把整个 toast DOM 逻辑连同调用参数一起 tree-shake 掉
+  if (!import.meta.env.DEV) return
   if (toastEl) {
     toastEl.remove()
     toastEl = null
