@@ -8,6 +8,7 @@ import { S3_LESSONS } from '@/data/s3-lessons'
 import { S4_LESSONS } from '@/data/s4-lessons'
 import BadgeDisplay from '@/components/BadgeDisplay'
 import DailyTasks from '@/components/DailyTasks'
+import { BuildBadge } from '@/components/BuildBadge'
 
 export default function Home() {
   const { lessonProgress, earProgress, badges, streak } = useStore()
@@ -333,6 +334,8 @@ export default function Home() {
           </a>
         </div>
       </div>
+
+      <BuildBadge className="mt-2 pb-4" />
     </div>
   )
 }

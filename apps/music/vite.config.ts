@@ -2,7 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-export default defineConfig({
+const BUILD_ID = Date.now().toString()
+
+export default defineConfig(({ command }) => ({
+  define: {
+    'import.meta.env.VITE_BUILD_ID': JSON.stringify(
+      command === 'build' ? BUILD_ID : 'dev'
+    ),
+  },
   plugins: [react()],
   resolve: {
     alias: {
@@ -21,4 +28,4 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test-setup.ts',
   },
-})
+}))
