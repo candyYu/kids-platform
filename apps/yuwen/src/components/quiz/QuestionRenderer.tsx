@@ -449,7 +449,9 @@ function PickByCharBody({ q, correct, wrong }: any) {
       </div>
       <button
         onClick={() => {
-          if (picked && comparePinyin(picked, q.answer, true)) correct()
+          // 点选题数据同源（无自由输入的 NFC/NFD 问题），声调必须精确：
+          // 声调辨析题（ā/á/ǎ/à 四选一）错声调不能判对
+          if (picked && comparePinyin(picked, q.answer, false)) correct()
           else wrong(q.answer)
         }}
         className="w-full py-3 bg-pig-500 text-white rounded-bubble text-child font-bold"
@@ -521,7 +523,9 @@ function FillBlankBody({ q, correct, wrong }: any) {
       </div>
       <button
         onClick={() => {
-          if (picked && comparePinyin(picked, q.answer, true)) correct()
+          // 点选题数据同源（无自由输入的 NFC/NFD 问题），声调必须精确：
+          // 声调辨析题（ā/á/ǎ/à 四选一）错声调不能判对
+          if (picked && comparePinyin(picked, q.answer, false)) correct()
           else wrong(q.answer)
         }}
         className="w-full py-3 bg-pig-500 text-white rounded-bubble text-child font-bold"

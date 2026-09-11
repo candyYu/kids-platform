@@ -231,7 +231,7 @@ export const L04_QUESTIONS: Question[] = [
   { id: 'L04-q11', lessonId: 'L04', type: 'syllableCompose', prompt: 'n + u = ?', initial: 'n', finals: ['u'], answer: 'nu' },
   { id: 'L04-q12', lessonId: 'L04', type: 'syllableCompose', prompt: 'l + i = ?', initial: 'l', finals: ['i'], answer: 'li' },
   // 看字选拼音
-  { id: 'L04-q13', lessonId: 'L04', type: 'pickByChar', prompt: '"大"的正确拼音是？', char: '大', options: ['tā', 'dā', 'nā', 'lā'], answer: 'dà' },
+  { id: 'L04-q13', lessonId: 'L04', type: 'pickByChar', prompt: '"大"的正确拼音是？', char: '大', options: ['tà', 'dà', 'nà', 'là'], answer: 'dà' },
   { id: 'L04-q14', lessonId: 'L04', type: 'pickByChar', prompt: '"土"的正确拼音是？', char: '土', options: ['dǔ', 'tǔ', 'nǔ', 'lǔ'], answer: 'tǔ' },
   { id: 'L04-q15', lessonId: 'L04', type: 'pickByChar', prompt: '"路"的正确拼音是？', char: '路', options: ['nù', 'lù', 'dù', 'tù'], answer: 'lù' },
   // 音节拆分
