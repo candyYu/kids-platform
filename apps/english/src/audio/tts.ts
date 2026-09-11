@@ -67,9 +67,14 @@ export async function speakEn(text: string, kind: Kind): Promise<boolean> {
     stopCurrent()
     const audio = new Audio(url)
     current = audio
+    let started = false // 是否已真正开始出声；出声后再被打断不算加载失败
+    audio.onplaying = () => { started = true }
     audio.onerror = () => {
-      if (current === audio) stopCurrent()
-      fallbackSpeak(text)
+      // 只处理「当前这个」音频、且它还没开始播放时的错误（真正的文件加载失败）
+      if (current === audio && !started) {
+        stopCurrent()
+        fallbackSpeak(text)
+      }
     }
     try {
       await audio.play()

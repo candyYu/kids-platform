@@ -1,4 +1,4 @@
-// 单元页：学单词（点读）→ 学句子（点读）→ 练一练（听音选图/看图选词/听音选词）
+// 单元页：学单词（点读）→ 学句子（点读）→ 课文互动（动画视频+同步朗读）→ 练一练（听音选图/看图选词/听音选词）
 // 课本活动对应：Look, listen and chant（点读）+ Listen and do / Let's play（练一练）
 // 激励埋点：点读=首次学(SRS learn)+打卡；练一练答对=+1⭐+SRS复习结果
 import { useMemo, useState } from 'react'
@@ -7,9 +7,208 @@ import { unitById, type EnWord, type EnUnit } from '@/data/units'
 import { speakEn } from '@/audio/tts'
 import { addStars, touchStreak, learn as srsLearn, reviewResult } from '@kids/core'
 
+const OSS_DOMAIN = (import.meta.env.VITE_OSS_ENGLISH_DOMAIN || '').replace(/\/$/, '')
+const mediaUrl = (file: string) => `${OSS_DOMAIN}/${file}`
+
+interface MediaClip {
+  name: string
+  file: string // OSS 上的完整 key（已实际上传验证，勿手改）
+}
+
+// 分段课文动画（key = units.ts 里的单元 id）
+const REVISION_CLIPS: MediaClip[] = [
+  { name: 'Listen and chant', file: '1a/revision/Revision_Listen_and_chant.mp4' },
+  { name: 'Listen and do', file: '1a/revision/Revision_Listen_and_do.mp4' },
+  { name: 'Listen and read aloud', file: '1a/revision/Revision_Listen_and_read_aloud.mp4' },
+]
+
+const UNIT_CLIPS: Record<string, MediaClip[]> = {
+  b1a1: [
+    { name: '开篇页 Listen and chant', file: '1a/u1/开篇页_Listen_and_chant.mp4' },
+    { name: '开篇页 Listen and sing', file: '1a/u1/开篇页_Listen_and_sing.mp4' },
+    { name: 'Listen and say', file: '1a/u1/Listen_and_say.mp4' },
+    { name: 'Listen and say ②', file: '1a/u1/Listen_and_say2.mp4' },
+    { name: 'Listen, point and repeat', file: '1a/u1/Listen_point_and_repeat.mp4' },
+    { name: 'Listen, sing and act', file: '1a/u1/Listen_sing_and_act.mp4' },
+    { name: 'Fun time', file: '1a/u1/Fun_time.mp4' },
+  ],
+  b1a2: [
+    { name: 'Listen and chant', file: '1a/u2/Listen_and_chant.mp4' },
+    { name: 'Listen and sing', file: '1a/u2/Listen_and_sing.mp4' },
+    { name: 'Listen and say', file: '1a/u2/Listen_and_say.mp4' },
+    { name: 'Listen, point and repeat', file: '1a/u2/Listen_point_and_repeat.mp4' },
+    { name: 'Fun time', file: '1a/u2/Fun_time.mp4' },
+  ],
+  b1a3: [
+    { name: 'Listen and chant', file: '1a/u3/Listen_and_chant.mp4' },
+    { name: 'Listen and do', file: '1a/u3/Listen_and_do.mp4' },
+    { name: 'Listen and say', file: '1a/u3/Listen_and_say.mp4' },
+    { name: 'Listen and sing', file: '1a/u3/Listen_and_sing.mp4' },
+    { name: 'Listen, point and repeat', file: '1a/u3/Listen_point_and_repeat.mp4' },
+    { name: 'Fun time', file: '1a/u3/Fun_time.mp4' },
+  ],
+  b1a4: [
+    { name: 'Listen and chant', file: '1a/u4/Listen_and_chant.mp4' },
+    { name: 'Listen and do', file: '1a/u4/Listen_and_do.mp4' },
+    { name: 'Listen and say', file: '1a/u4/Listen_and_say.mp4' },
+    { name: 'Listen and sing', file: '1a/u4/Listen_and_sing.mp4' },
+    { name: 'Listen, point and repeat', file: '1a/u4/Listen_point_and_repeat.mp4' },
+    { name: 'Fun time', file: '1a/u4/Fun_time.mp4' },
+  ],
+}
+
+// 完整磨耳朵视频（U6 无此视频，故不在表内）
+const MOERDUO: Record<string, MediaClip> = {
+  b1ar1: { name: 'Revision 完整磨耳朵', file: '1a/revision/revision_moerduo.mp4' },
+  b1ar2: { name: 'Revision 完整磨耳朵', file: '1a/revision/revision_moerduo.mp4' },
+  b1a1: { name: 'Unit 1 完整磨耳朵', file: '1a/u1/u1_moerduo.mp4' },
+  b1a2: { name: 'Unit 2 完整磨耳朵', file: '1a/u2/u2_moerduo.mp4' },
+  b1a3: { name: 'Unit 3 完整磨耳朵', file: '1a/u3/u3_moerduo.mp4' },
+  b1a4: { name: 'Unit 4 完整磨耳朵', file: '1a/u4/u4_moerduo.mp4' },
+  b1a5: { name: 'Unit 5 完整磨耳朵', file: '1a/u5/u5_moerduo.mp4' },
+}
+
+const WORD_FOLLOW_1A = '1a/word_follow_1a.mp4'
+const READING_PAGES = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52]
+
+// 课文同步朗读（独立组件，状态在组件顶层，避免在循环里调用 hooks）
+function ReadingAudio() {
+  const [playing, setPlaying] = useState<string | null>(null)
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {READING_PAGES.map((page) => {
+        const file = `1a/text_reading/p${String(page).padStart(2, '0')}.mp3`
+        const active = playing === file
+        return (
+          <button
+            key={page}
+            onClick={() => setPlaying(active ? null : file)}
+            className={`px-2 py-3 rounded-lg border-2 text-center transition-colors ${
+              active
+                ? 'border-sky-500 bg-sky-50 text-sky-700'
+                : 'border-gray-200 bg-white text-ink-700 active:scale-95'
+            }`}
+          >
+            <span className="block text-sm font-bold">P{page}</span>
+            <span className="block text-xs">{active ? '⏸ 停止' : '🔊 听'}</span>
+            {active && (
+              <audio src={mediaUrl(file)} controls autoPlay className="w-full mt-1" />
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// 课文互动：分段动画 + 完整磨耳朵 + 课文朗读 + 单词跟读
+function MediaSection({ unit }: { unit: EnUnit }) {
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null)
+  const toggle = (file: string) => setPlayingVideo((cur) => (cur === file ? null : file))
+
+  const is1a = unit.book === '1a'
+  const clips: MediaClip[] = is1a
+    ? unit.id.startsWith('b1ar')
+      ? REVISION_CLIPS
+      : UNIT_CLIPS[unit.id] ?? []
+    : []
+  const moerduo = is1a ? MOERDUO[unit.id] : undefined
+
+  if (!OSS_DOMAIN) {
+    return (
+      <div className="paper-card p-6 text-center">
+        <p className="text-child text-ink-500">OSS 域名未配置，无法加载视频音频。请配置 VITE_OSS_ENGLISH_DOMAIN 后重新构建。</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 分段课文动画 */}
+      {/* 分段课文动画 */}
+      {clips.length > 0 && (
+        <div className="paper-card p-4">
+          <h3 className="text-child font-bold text-ink-700 mb-3">分段课文动画</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {clips.map((v) => (
+              <button
+                key={v.file}
+                onClick={() => toggle(v.file)}
+                className={`text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                  playingVideo === v.file
+                    ? 'border-sky-500 bg-sky-50 text-sky-700'
+                    : 'border-gray-200 bg-white text-ink-700 active:scale-95'
+                }`}
+              >
+                <span className="block text-sm font-medium">🎬 {v.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 完整磨耳朵视频 */}
+      {moerduo && (
+        <div className="paper-card p-4">
+          <button
+            onClick={() => toggle(moerduo.file)}
+            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+              playingVideo === moerduo.file
+                ? 'border-sky-500 bg-sky-50 text-sky-700'
+                : 'border-gray-200 bg-white text-ink-700 active:scale-95'
+            }`}
+          >
+            <span className="block text-child font-medium">🎧 {moerduo.name}</span>
+            <span className="block text-xs text-ink-500 mt-1">完整单元合集，磨耳朵专用</span>
+          </button>
+        </div>
+      )}
+
+      {/* 视频播放器（分段动画 / 磨耳朵 / 单词跟读 共用） */}
+      {playingVideo && (
+        <div className="paper-card p-2">
+          <video
+            src={mediaUrl(playingVideo)}
+            controls
+            preload="metadata"
+            playsInline
+            className="w-full rounded-lg bg-black"
+          />
+        </div>
+      )}
+
+      {/* 课文同步朗读 */}
+      {is1a && (
+        <div className="paper-card p-4">
+          <h3 className="text-child font-bold text-ink-700 mb-3">课文同步朗读</h3>
+          <ReadingAudio />
+        </div>
+      )}
+
+      {/* 单词跟读 */}
+      {is1a && (
+        <div className="paper-card p-4">
+          <h3 className="text-child font-bold text-ink-700 mb-3">单词跟读</h3>
+          <button
+            onClick={() => toggle(WORD_FOLLOW_1A)}
+            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+              playingVideo === WORD_FOLLOW_1A
+                ? 'border-sky-500 bg-sky-50 text-sky-700'
+                : 'border-gray-200 bg-white text-ink-700 active:scale-95'
+            }`}
+          >
+            <span className="block text-child font-medium">🎬 一年级上册 完整单词跟读</span>
+            <span className="block text-xs text-ink-500 mt-1">整册单词串读，点上方播放器观看</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const srsKey = (en: string) => `en:${en}`
 
-type Stage = 'words' | 'sents' | 'quiz'
+type Stage = 'words' | 'sents' | 'media' | 'quiz'
 
 // ---------------- 学单词 ----------------
 function WordGrid({ unit }: { unit: EnUnit }) {
@@ -255,6 +454,7 @@ export default function UnitPage() {
   const allTabs: { key: Stage; label: string; emoji: string }[] = [
     { key: 'words', label: '学单词', emoji: '🔤' },
     { key: 'sents', label: '学句子', emoji: '💬' },
+    { key: 'media', label: '课文互动', emoji: '🎬' },
     { key: 'quiz', label: '练一练', emoji: '🎯' },
   ]
   const tabs = allTabs.filter((t) => (t.key === 'words' || t.key === 'quiz') ? hasWords : true)
@@ -298,6 +498,7 @@ export default function UnitPage() {
 
       {stage === 'words' && <WordGrid unit={unit} />}
       {stage === 'sents' && <SentList unit={unit} />}
+      {stage === 'media' && <MediaSection unit={unit} />}
       {stage === 'quiz' && <Quiz unit={unit} onExit={() => setStage('sents')} />}
     </main>
   )
