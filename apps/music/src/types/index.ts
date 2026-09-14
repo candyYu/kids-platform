@@ -94,6 +94,7 @@ export type RhythmPattern =
   | 'two-sixteenths-eighth' // ti-ri · ti (前十六后八)
   | 'dotted-quarter-eighth' // ta-i · ti (附点四分+八分)
   | 'syncopation'       // ti · ta · ti (切分)
+  | 'triplet'           // ta-ta-ta (三连音，一拍三等分)
   | 'quarter-rest'      // 休止
   | 'half'              // ta-a (二分)
   | 'whole'             // ta-a-a-a (全音符)
@@ -108,6 +109,7 @@ export const RHYTHM_KODALY: Record<RhythmPattern, string> = {
   'two-sixteenths-eighth': 'ti-ri · ti',
   'dotted-quarter-eighth': 'ta-i · ti',
   'syncopation': 'ti · ta · ti',
+  'triplet': 'ta-ta-ta',
   'quarter-rest': '（休止）',
   'half': 'ta-a',
   'whole': 'ta-a-a-a',

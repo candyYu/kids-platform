@@ -28,6 +28,7 @@ const DALCROZE: Record<string, string[]> = {
   'eighth-two-sixteenths': ['站起来，走 1 步（ti）+ 快踏 2 下（ti-ri）', '长-短短 = ti · ti-ri！', '重复 4 次：长-短短', '坐下，拍腿 1 下 + 拍手 2 下'],
   'two-sixteenths-eighth': ['站起来，快踏 2 下（ti-ri）+ 走 1 步（ti）', '短短-长 = ti-ri · ti！', '重复 4 次：短短-长', '坐下，拍手 2 下 + 拍腿 1 下'],
   'quarter-rest': ['站起来，走 1 步--停 1 拍（不出声）', '走-停-走-停，像红灯绿灯游戏', '停的时候身体不动，嘴巴闭紧', '坐下，拍手--停--拍手--停'],
+  'triplet': ['站起来，在一拍里快快走 3 步（ta-ta-ta）', '像小碎步：一、二、三，均匀三等分', '手拍一下，嘴里同时数 ta-ta-ta', '坐下，手指在桌面一拍内敲 3 下，三遍'],
 }
 
 const SEGMENT_NAMES: Record<SegmentType, string> = {
@@ -196,14 +197,19 @@ export default function Lesson() {
         // Curwen 手势动画：按旋律节奏逐个高亮
         const solfegeList = [...new Set(notes.map(n => NOTE_MAP[noteBase(n) as NoteName]?.solfege).filter(Boolean))] as Solfege[]
         const beatSec = 60 / tempo
-        let cumTime = 0
+        // 与 playMelody 一致：节奏型按时值展开，每个发声单元对齐一个音（三连音=一拍3音）
+        const onsetBeats: number[] = []
+        let cumBeat = 0
+        for (const r of rhythm) {
+          for (const d of audioEngine.patternToDurationsPublic(r)) {
+            if (r !== 'quarter-rest') onsetBeats.push(cumBeat)
+            cumBeat += d
+          }
+        }
         notes.forEach((note, i) => {
-          const r = rhythm[i] || 'quarter'
-          const beats = r === 'quarter' ? 1 : r === 'eighth' ? 0.5 : r === 'half' ? 2 : 4
           const sol = NOTE_MAP[noteBase(note) as NoteName]?.solfege
           const idx = solfegeList.indexOf(sol as Solfege)
-          setTimeout(() => setActiveNoteIdx(idx >= 0 ? idx : null), cumTime * 1000)
-          cumTime += beats * beatSec
+          setTimeout(() => setActiveNoteIdx(idx >= 0 ? idx : null), (onsetBeats[i] ?? 0) * beatSec * 1000)
         })
         setTimeout(() => setActiveNoteIdx(null), duration)
         setTimeout(() => setDemoPlaying(false), duration)

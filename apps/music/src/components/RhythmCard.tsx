@@ -17,6 +17,7 @@ function patternToNotes(pattern: RhythmPattern): { dur: number; syllable: string
     'two-sixteenths-eighth': [[0.25, 'ti'], [0.25, 'ri'], [0.5, 'ti']],
     'dotted-quarter-eighth': [[1.5, 'ta-i'], [0.5, 'ti']],
     'syncopation': [[0.5, 'ti'], [1, 'ta'], [0.5, 'ti']],
+    'triplet': [[1 / 3, 'ta'], [1 / 3, 'ta'], [1 / 3, 'ta']],
     'quarter-rest': [[1, '休']],
     'half': [[2, 'ta-a']],
     'whole': [[4, 'ta-a-a-a']],

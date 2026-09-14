@@ -255,6 +255,7 @@ class AudioEngine {
       case 'two-sixteenths-eighth': return [beat / 4, beat / 4, beat / 2]
       case 'dotted-quarter-eighth': return [beat * 1.5, beat / 2]
       case 'syncopation': return [beat / 2, beat, beat / 2]
+      case 'triplet': return [beat / 3, beat / 3, beat / 3] // 三连音：一拍三等分
       case 'quarter-rest': return [beat] // 休止
       case 'half': return [beat * 2]
       case 'whole': return [beat * 4]
