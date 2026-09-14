@@ -8,6 +8,16 @@ import { STORYBOOK_RUBIES, type Ruby } from '@/data/storybook-rubies'
 import { playFile, stopAudio } from '@/audio/tts'
 import { addStars, touchStreak } from '@kids/core'
 
+// Fisher-Yates 打乱选项下标
+function shuffledIndices(n: number): number[] {
+  const a = Array.from({ length: n }, (_, i) => i)
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 // 场景图：emoji 大场景卡（主角超大 + 配角中号 + 渐变背景），与全平台风格统一
 function SceneView({ page }: { page: StoryPage }) {
   const [main, ...rest] = page.scene
@@ -57,6 +67,8 @@ export default function StoryReader() {
   const [quizIdx, setQuizIdx] = useState(0)
   const [wrongPick, setWrongPick] = useState(-1)
   const [starGain, setStarGain] = useState(0)
+  // 每题选项打乱顺序（正确答案原本永远在第一位，孩子会记位置不走脑）
+  const [orders, setOrders] = useState<number[][]>([])
 
   // 翻页自动朗读当前句（亲子共读：家长可自己读，app 朗读是辅助）
   useEffect(() => {
@@ -84,8 +96,10 @@ export default function StoryReader() {
   // ---------- 问答模式 ----------
   if (mode === 'quiz') {
     const q = book.quiz[quizIdx]
-    const pick = (i: number) => {
-      if (i === q.answer) {
+    const order = orders[quizIdx] ?? q.options.map((_, i) => i)
+    const pick = (displayPos: number) => {
+      const dataIdx = order[displayPos]
+      if (dataIdx === q.answer) {
         if (quizIdx + 1 >= book.quiz.length) {
           // 全部答对：完成！
           const got = addStars(5)
@@ -97,7 +111,7 @@ export default function StoryReader() {
           setQuizIdx((n) => n + 1)
         }
       } else {
-        setWrongPick(i)
+        setWrongPick(displayPos)
         setTimeout(() => setWrongPick(-1), 450)
       }
     }
@@ -123,15 +137,15 @@ export default function StoryReader() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {q.options.map((opt, i) => (
+            {order.map((dataIdx, displayPos) => (
               <button
-                key={opt}
-                onClick={() => pick(i)}
+                key={q.options[dataIdx]}
+                onClick={() => pick(displayPos)}
                 className={`bg-white rounded-bubble shadow-card py-5 text-child font-bold text-sea-900 border-2 border-pig-200 active:scale-95 ${
-                  wrongPick === i ? 'shake border-chili-500' : ''
+                  wrongPick === displayPos ? 'shake border-chili-500' : ''
                 }`}
               >
-                {opt}
+                {q.options[dataIdx]}
               </button>
             ))}
           </div>
@@ -225,8 +239,13 @@ export default function StoryReader() {
         </div>
         {isLast ? (
           <button
-            onClick={() => setMode('quiz')}
-            className="px-5 h-14 rounded-full bg-sun-500 text-white text-child font-bold shadow-sun active:scale-95 shrink-0"
+            onClick={() => {
+              setOrders(book.quiz.map(qq => shuffledIndices(qq.options.length)))
+              setQuizIdx(0)
+              setWrongPick(-1)
+              setMode('quiz')
+            }}
+            className="px-10 h-14 rounded-full bg-sun-500 text-white text-child font-bold shadow-sun active:scale-95 shrink-0"
           >
             读完了 ✨
           </button>

@@ -44,11 +44,16 @@ export default function EarTraining() {
       const answer = PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)]
       qs.push({ type: 'E1', answer, options: [PENTATONIC] })
     }
-    // E2: 1 道音程对比（相同/不同）
+    // E2: 1 道音程对比（相同/不同）——“不同”时必须重抽到真的不同，否则孩子会被教错
     {
       const same = Math.random() > 0.5
       const note = audioEngine.solfegeToMidi(PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)])
-      const note2 = same ? note : audioEngine.solfegeToMidi(PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)])
+      let note2 = note
+      if (!same) {
+        do {
+          note2 = audioEngine.solfegeToMidi(PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)])
+        } while (note2 === note)
+      }
       qs.push({ type: 'E2', answer: same ? 'same' : 'different', midiNotes: [note, note2] })
     }
     // E3: 1 道高低辨识

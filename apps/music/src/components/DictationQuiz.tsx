@@ -1,6 +1,16 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import type { DictationQuestion } from '@/types'
 import { audioEngine } from '@/audio/engine'
+
+// Fisher-Yates（不能用 sort(random)：有偏）
+function shuffleOptions(n: number): number[] {
+  const a = Array.from({ length: n }, (_, i) => i)
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
 
 /** 迷你节奏条：从选项文字中提取 Kodály 音节，显示彩色小方块 */
 function MiniRhythm({ label }: { label: string }) {
@@ -42,6 +52,14 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
   const question = questions[currentIdx]
   const isLast = currentIdx === questions.length - 1
 
+  // 每题选项打乱一次（数据里正确答案 60% 在第一位，孩子会记位置不走脑）
+  const orders = useMemo(
+    () => questions.map(q => shuffleOptions(q.options.length)),
+    [questions]
+  )
+  const order = orders[currentIdx]
+  const correctDisplayPos = order.indexOf(question.correctIndex)
+
   const playAudio = useCallback(async () => {
     if (playing) return
     setPlaying(true)
@@ -72,12 +90,12 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
     }
   }, [currentIdx, playAudio])
 
-  const handleSelect = async (idx: number) => {
+  const handleSelect = async (displayPos: number) => {
     if (answered) return
-    setSelectedIdx(idx)
+    setSelectedIdx(displayPos)
     setAnswered(true)
 
-    if (idx === question.correctIndex) {
+    if (order[displayPos] === question.correctIndex) {
       setCorrectCount((c) => c + 1)
       setResults(r => [...r, true])
       await audioEngine.playCorrect()
@@ -149,12 +167,13 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
 
       {/* 选项 */}
       <div className="grid gap-3 mb-6">
-        {question.options.map((opt, idx) => {
+        {order.map((dataIdx, displayPos) => {
+          const opt = question.options[dataIdx]
           let style = 'bg-white border-2 border-gray-200 hover:border-purple-300'
           if (answered) {
-            if (idx === question.correctIndex) {
+            if (displayPos === correctDisplayPos) {
               style = 'bg-green-100 border-2 border-green-400'
-            } else if (idx === selectedIdx) {
+            } else if (displayPos === selectedIdx) {
               style = 'bg-red-100 border-2 border-red-400'
             } else {
               style = 'bg-gray-50 border-2 border-gray-200 opacity-50'
@@ -162,13 +181,13 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
           }
           return (
             <button
-              key={idx}
-              onClick={() => handleSelect(idx)}
+              key={dataIdx}
+              onClick={() => handleSelect(displayPos)}
               disabled={answered}
               className={`p-4 rounded-2xl text-lg font-bold text-gray-700 transition-all active:scale-95 ${style}`}
             >
-              {answered && idx === question.correctIndex && '✅ '}
-              {answered && idx === selectedIdx && idx !== question.correctIndex && '❌ '}
+              {answered && displayPos === correctDisplayPos && '✅ '}
+              {answered && displayPos === selectedIdx && displayPos !== correctDisplayPos && '❌ '}
               {opt.label}
               <MiniRhythm label={opt.label} />
             </button>
