@@ -12,6 +12,16 @@ import { speakHanzi, stopAudio } from '@/audio/tts'
 
 type Stage = 'listen' | 'chars' | 'quiz'
 
+// Fisher-Yates 洗牌（不能用 sort(() => Math.random()-0.5)，那种洗牌有偏）
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 const STAGES: { key: Stage; label: string; emoji: string }[] = [
   { key: 'listen', label: '听读', emoji: '👂' },
   { key: 'chars', label: '认字', emoji: '🔤' },
@@ -208,8 +218,8 @@ function QuizStage({ chars, onDone }: { chars: string[]; onDone: (score: number)
     const out: { answer: string; options: string[] }[] = []
     for (let i = 0; i < Math.min(6, pool.length); i++) {
       const answer = pool[i]
-      const distract = pool.filter(c => c !== answer).sort(() => Math.random() - 0.5).slice(0, 3)
-      out.push({ answer, options: [answer, ...distract].sort(() => Math.random() - 0.5) })
+      const distract = shuffle(pool.filter(c => c !== answer)).slice(0, 3)
+      out.push({ answer, options: shuffle([answer, ...distract]) })
     }
     return out
   }, [chars])

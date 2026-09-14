@@ -15,7 +15,13 @@ const MELODY_POOLS: Solfege[][] = [
 const RHYTHM_OPTIONS: RhythmPattern[] = ['quarter', 'two-eighths', 'four-sixteenths', 'half']
 
 function shuffle<T>(arr: T[]): T[] {
-  return [...arr].sort(() => Math.random() - 0.5)
+  // Fisher-Yates；sort(() => Math.random()-0.5) 有偏，不能用
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
 }
 
 // 耳训题目类型
