@@ -314,6 +314,26 @@ class AudioEngine {
     this.synth!.triggerAttackRelease(freqs, duration, Tone.now() + 0.1)
   }
 
+  /** 播放和弦序列（和弦进行）：每个和弦占 beatsPerChord 拍，依次发声。
+   *  用于“V7/V→V7”“I-vi-ii-V-I”等进行题——必须逐个和弦出现，
+   *  不能用 playChord 把全部音同时砸响。 */
+  async playChordSequence(chords: string[][], tempo = 60, beatsPerChord = 2) {
+    await this.init()
+    const beatDuration = 60 / tempo
+    const startAt = Tone.now() + 0.1
+    const chordDur = beatsPerChord * beatDuration * 0.92
+    chords.forEach((chord, i) => {
+      const time = startAt + i * beatsPerChord * beatDuration
+      const freqs = chord.map(n => this.noteToFreq(n))
+      this.synth!.triggerAttackRelease(freqs, chordDur, time)
+    })
+  }
+
+  /** 和弦序列总时长（秒），供 UI 播放态计时 */
+  getChordSequenceDuration(chords: string[][], tempo = 60, beatsPerChord = 2) {
+    return chords.length * beatsPerChord * (60 / tempo)
+  }
+
   /** 播放旋律（带音高） */
   async playMelody(notes: string[], rhythm: RhythmPattern[], tempo = 60) {
     await this.init()

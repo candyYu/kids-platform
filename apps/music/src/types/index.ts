@@ -161,6 +161,9 @@ export interface AudioPattern {
   notes?: string[]
   /** 是否以和弦方式同时播放（默认 false，按旋律逐音播放） */
   chord?: boolean
+  /** 和弦序列：多个和弦按节奏依次出现（和弦进行题用，如 D7→G7）。
+   *  给出时优先于 notes+chord（后者会把所有音同时砸响，无法表达“进行”） */
+  chords?: string[][]
   /** 拍号 */
   timeSignature: [number, number]
   /** 速度 BPM */

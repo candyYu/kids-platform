@@ -151,8 +151,10 @@ export default function Lesson() {
   const playPreview = async () => {
     const q = lesson.dictationQuestions?.[0]
     if (!q?.audio) { await audioEngine.playRhythm('quarter', 60); return }
-    const { notes, rhythm, tempo, chord } = q.audio
-    if (chord && notes && notes.length > 0) {
+    const { notes, rhythm, tempo, chord, chords } = q.audio
+    if (chords && chords.length > 0) {
+      await audioEngine.playChordSequence(chords, tempo)
+    } else if (chord && notes && notes.length > 0) {
       await audioEngine.playChord(notes, 1.5)
     } else if (notes && notes.length > 0) {
       await audioEngine.playMelody(notes, rhythm, tempo)
@@ -186,7 +188,12 @@ export default function Lesson() {
     setDemoPlaying(true)
     const q = lesson.dictationQuestions?.[0]
     if (!q?.audio) { setDemoPlaying(false); return }
-    const { notes, rhythm, tempo, chord } = q.audio
+    const { notes, rhythm, tempo, chord, chords } = q.audio
+    if (chords && chords.length > 0) {
+      await audioEngine.playChordSequence(chords, tempo)
+      setTimeout(() => setDemoPlaying(false), audioEngine.getChordSequenceDuration(chords, tempo) * 1000 + 300)
+      return
+    }
     if (notes && notes.length > 0) {
       if (chord) {
         await audioEngine.playChord(notes)

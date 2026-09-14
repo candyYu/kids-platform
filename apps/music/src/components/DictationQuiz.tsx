@@ -63,7 +63,13 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
   const playAudio = useCallback(async () => {
     if (playing) return
     setPlaying(true)
-    const { rhythm, notes, tempo, chord } = question.audio
+    const { rhythm, notes, tempo, chord, chords } = question.audio
+    if (chords && chords.length > 0) {
+      await audioEngine.playChordSequence(chords, tempo)
+      const seqMs = audioEngine.getChordSequenceDuration(chords, tempo) * 1000 + 300
+      setTimeout(() => setPlaying(false), seqMs)
+      return
+    }
     if (notes && notes.length > 0) {
       if (chord) {
         await audioEngine.playChord(notes)
@@ -105,8 +111,10 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
       // 答错后延迟 1 秒，播放正确答案的音频让孩子对比
       setShowHint(true)
       setTimeout(async () => {
-        const { rhythm, notes, tempo, chord } = question.audio
-        if (notes && notes.length > 0) {
+        const { rhythm, notes, tempo, chord, chords } = question.audio
+        if (chords && chords.length > 0) {
+          await audioEngine.playChordSequence(chords, tempo)
+        } else if (notes && notes.length > 0) {
           if (chord) {
             await audioEngine.playChord(notes)
           } else {
