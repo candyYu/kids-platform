@@ -63,25 +63,30 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
   const playAudio = useCallback(async () => {
     if (playing) return
     setPlaying(true)
-    const { rhythm, notes, tempo, chord, chords } = question.audio
+    const { rhythm, notes, tempo, chord, chords, parts, meter } = question.audio
     if (chords && chords.length > 0) {
       await audioEngine.playChordSequence(chords, tempo)
       const seqMs = audioEngine.getChordSequenceDuration(chords, tempo) * 1000 + 300
       setTimeout(() => setPlaying(false), seqMs)
       return
     }
+    if (parts && parts.length > 0) {
+      await audioEngine.playParts(parts, tempo)
+      setTimeout(() => setPlaying(false), audioEngine.getPartsDuration(parts, tempo) * 1000 + 300)
+      return
+    }
     if (notes && notes.length > 0) {
       if (chord) {
         await audioEngine.playChord(notes)
       } else {
-        await audioEngine.playMelody(notes, rhythm, tempo)
+        await audioEngine.playMelody(notes, rhythm ?? [], tempo, meter)
       }
     } else {
       await audioEngine.playAudioPattern(question.audio)
     }
     // 等待播放结束（节奏时长）
     const beatDur = 60 / tempo
-    const totalBeats = rhythm.reduce((sum, r) => {
+    const totalBeats = (rhythm ?? []).reduce((sum, r) => {
       const durs = audioEngine.patternToDurationsPublic(r)
       return sum + durs.reduce((s, d) => s + d, 0)
     }, 0)
@@ -111,14 +116,16 @@ export default function DictationQuiz({ questions, onComplete, title }: Props) {
       // 答错后延迟 1 秒，播放正确答案的音频让孩子对比
       setShowHint(true)
       setTimeout(async () => {
-        const { rhythm, notes, tempo, chord, chords } = question.audio
+        const { rhythm, notes, tempo, chord, chords, parts, meter } = question.audio
         if (chords && chords.length > 0) {
           await audioEngine.playChordSequence(chords, tempo)
+        } else if (parts && parts.length > 0) {
+          await audioEngine.playParts(parts, tempo)
         } else if (notes && notes.length > 0) {
           if (chord) {
             await audioEngine.playChord(notes)
           } else {
-            await audioEngine.playMelody(notes, rhythm, tempo)
+            await audioEngine.playMelody(notes, rhythm ?? [], tempo, meter)
           }
         } else {
           await audioEngine.playAudioPattern(question.audio)

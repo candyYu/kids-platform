@@ -1,6 +1,9 @@
 import * as Tone from 'tone'
 import type { RhythmPattern, NoteName, AudioPattern } from '@/types'
 
+/** 拍号重音规格（与 AudioPattern.meter 同构，引擎内部用） */
+type MeterSpec = { beats?: number; grouping?: number[]; beatsPerUnit?: number; bars?: number[] }
+
 // 单例音频引擎
 class AudioEngine {
   private synth: Tone.PolySynth | null = null
@@ -290,7 +293,7 @@ class AudioEngine {
     const startAt = Tone.now() + 0.1
     let elapsed = 0
 
-    for (const rhythm of pattern.rhythm) {
+    for (const rhythm of pattern.rhythm ?? []) {
       const durations = this.patternToDurations(rhythm)
       for (let i = 0; i < durations.length; i++) {
         const time = startAt + elapsed * beatDuration
@@ -334,13 +337,52 @@ class AudioEngine {
     return chords.length * beatsPerChord * (60 / tempo)
   }
 
-  /** 播放旋律（带音高） */
-  async playMelody(notes: string[], rhythm: RhythmPattern[], tempo = 60) {
+  /** 拍号重音：直接给出每个小节组首拍（从 0 计，单位=拍）。
+   *  5/4(3+2)=[0,3]，7/8(2+2+3,八分=0.5拍)=[0,1,2]，变拍子按真实拍点给。 */
+  private meterDownbeats(meter: MeterSpec, totalBeats: number): Set<number> {
+    const s = new Set<number>()
+    const r1000 = (x: number) => Math.round(x * 1000) / 1000
+    // 变拍子：逐小节拍数循环，强奏每个小节首拍
+    if (meter.bars && meter.bars.length > 0) {
+      const cycle = meter.bars.reduce((a, b) => a + b, 0)
+      for (let base = 0; base <= totalBeats + 0.01; base += cycle) {
+        let off = 0
+        s.add(r1000(base))
+        for (const bl of meter.bars) { off += bl; s.add(r1000(base + off)) }
+      }
+      return s
+    }
+    // 常规混合拍：每小节按 grouping 分组，强奏每组首拍（5/4 3+2 → 0、3）
+    const span = meter.beats ?? 4
+    const groups = meter.grouping ?? [span]
+    const unit = meter.beatsPerUnit ?? 1
+    for (let barStart = 0; barStart <= totalBeats + 0.01; barStart += span) {
+      let off = 0
+      for (const g of groups) {
+        s.add(r1000(barStart + off))
+        off += g * unit
+      }
+    }
+    return s
+  }
+
+  /** 播放旋律（带音高）。meter 给出时按拍号分组强奏组首拍（5/4、7/8、变拍子听辨用） */
+  async playMelody(notes: string[], rhythm: RhythmPattern[], tempo = 60, meter?: MeterSpec) {
     await this.init()
     const beatDuration = 60 / tempo
     const startAt = Tone.now() + 0.1
     let elapsed = 0
     let noteIdx = 0
+
+    // 先算每个发声单元的拍位置，用于判断重音
+    const onsetBeats: number[] = []
+    {
+      let e = 0
+      for (const pat of rhythm) {
+        for (const d of this.patternToDurations(pat)) { onsetBeats.push(e); e += d }
+      }
+    }
+    const downbeats = meter ? this.meterDownbeats(meter, onsetBeats[onsetBeats.length - 1] ?? 0) : null
 
     for (const pat of rhythm) {
       const durations = this.patternToDurations(pat)
@@ -348,12 +390,50 @@ class AudioEngine {
         const time = startAt + elapsed * beatDuration
         if (pat !== 'quarter-rest' && notes[noteIdx]) {
           const freq = this.noteToFreq(notes[noteIdx])
-          this.synth!.triggerAttackRelease(freq, durations[i] * beatDuration * 0.9, time)
+          const isDown = downbeats?.has(Math.round(elapsed * 1000) / 1000)
+          // 重音：稍响、稍长；非重音轻一点，让分组律动可被听出来
+          const vel = meter ? (isDown ? 1.0 : 0.55) : 0.85
+          const dur = durations[i] * beatDuration * (isDown ? 0.95 : 0.85)
+          this.synth!.triggerAttackRelease(freq, dur, time, vel)
           noteIdx++
         }
         elapsed += durations[i]
       }
     }
+  }
+
+  /** 播放多声部（part 数量 2~3，各自独立旋律并行）。高/低声部听辨、同向反向题用。
+   *  各声部音符数可不同，按同一节奏网格对齐。 */
+  async playParts(parts: { notes: string[]; rhythm: RhythmPattern[] }[], tempo = 60) {
+    await this.init()
+    const beatDuration = 60 / tempo
+    const startAt = Tone.now() + 0.1
+    parts.forEach((part, pi) => {
+      let elapsed = 0
+      let ni = 0
+      for (const pat of part.rhythm) {
+        for (const d of this.patternToDurations(pat)) {
+          if (pat !== 'quarter-rest' && part.notes[ni]) {
+            const freq = this.noteToFreq(part.notes[ni])
+            const time = startAt + elapsed * beatDuration
+            // 低声部（pi 较大）音色压暗：用更低力度，便于区分层次
+            const vel = pi === 0 ? 0.85 : 0.7
+            this.synth!.triggerAttackRelease(freq, d * beatDuration * 0.9, time, vel)
+            ni++
+          }
+          elapsed += d
+        }
+      }
+    })
+  }
+
+  /** 多声部总时长（秒） */
+  getPartsDuration(parts: { rhythm: RhythmPattern[] }[], tempo = 60) {
+    const beats = parts.reduce((mx, p) => {
+      const b = p.rhythm.reduce((s, r) => s + this.patternToDurations(r).reduce((a, x) => a + x, 0), 0)
+      return Math.max(mx, b)
+    }, 0)
+    return beats * (60 / tempo)
   }
 
   /** 节拍器 */

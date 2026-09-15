@@ -155,15 +155,22 @@ export interface QuestionOption {
 
 /** 音频模式描述（告诉音频引擎播放什么） */
 export interface AudioPattern {
-  /** 节奏型序列 */
-  rhythm: RhythmPattern[]
-  /** 音高序列（可选，支持变化音如 'F#','Bb'） */
+  /** 节奏型序列（单声部旋律题用；parts/chords 题可省略） */
+  rhythm?: RhythmPattern[]
+  /** 音高序列（可选，支持变化音如 'F#','Bb'；parts/chords 题可省略） */
   notes?: string[]
   /** 是否以和弦方式同时播放（默认 false，按旋律逐音播放） */
   chord?: boolean
   /** 和弦序列：多个和弦按节奏依次出现（和弦进行题用，如 D7→G7）。
    *  给出时优先于 notes+chord（后者会把所有音同时砸响，无法表达“进行”） */
   chords?: string[][]
+  /** 多声部：2~3 条独立旋律并行（高低声部、同向反向题用）。给出时优先于 notes */
+  parts?: { notes: string[]; rhythm: RhythmPattern[] }[]
+  /** 拍号重音：用于 5/4、7/8、变拍子等靠分组律动区分的题。
+   *  常规混合拍：beats=每小节拍数（5/4→5），grouping=分组（3+2→[3,2]），
+   *  beatsPerUnit=每个分组数字的拍长（7/8 按八分分组时 0.5）。
+   *  变拍子：给 bars=逐小节拍数（4/4 转 3/4 → [4,3] 循环），此时忽略 beats/grouping。 */
+  meter?: { beats?: number; grouping?: number[]; beatsPerUnit?: number; bars?: number[] }
   /** 拍号 */
   timeSignature: [number, number]
   /** 速度 BPM */

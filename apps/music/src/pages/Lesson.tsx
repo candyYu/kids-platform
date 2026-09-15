@@ -151,13 +151,15 @@ export default function Lesson() {
   const playPreview = async () => {
     const q = lesson.dictationQuestions?.[0]
     if (!q?.audio) { await audioEngine.playRhythm('quarter', 60); return }
-    const { notes, rhythm, tempo, chord, chords } = q.audio
+    const { notes, rhythm, tempo, chord, chords, parts, meter } = q.audio
     if (chords && chords.length > 0) {
       await audioEngine.playChordSequence(chords, tempo)
+    } else if (parts && parts.length > 0) {
+      await audioEngine.playParts(parts, tempo)
     } else if (chord && notes && notes.length > 0) {
       await audioEngine.playChord(notes, 1.5)
     } else if (notes && notes.length > 0) {
-      await audioEngine.playMelody(notes, rhythm, tempo)
+      await audioEngine.playMelody(notes, rhythm ?? [], tempo, meter)
     } else if (q.audio) {
       await audioEngine.playAudioPattern(q.audio)
     }
@@ -188,10 +190,15 @@ export default function Lesson() {
     setDemoPlaying(true)
     const q = lesson.dictationQuestions?.[0]
     if (!q?.audio) { setDemoPlaying(false); return }
-    const { notes, rhythm, tempo, chord, chords } = q.audio
+    const { notes, rhythm, tempo, chord, chords, parts, meter } = q.audio
     if (chords && chords.length > 0) {
       await audioEngine.playChordSequence(chords, tempo)
       setTimeout(() => setDemoPlaying(false), audioEngine.getChordSequenceDuration(chords, tempo) * 1000 + 300)
+      return
+    }
+    if (parts && parts.length > 0) {
+      await audioEngine.playParts(parts, tempo)
+      setTimeout(() => setDemoPlaying(false), audioEngine.getPartsDuration(parts, tempo) * 1000 + 300)
       return
     }
     if (notes && notes.length > 0) {
@@ -199,15 +206,16 @@ export default function Lesson() {
         await audioEngine.playChord(notes)
         setTimeout(() => setDemoPlaying(false), 2000)
       } else {
-        await audioEngine.playMelody(notes, rhythm, tempo)
-        const duration = audioEngine.getRhythmTotalDuration(rhythm, tempo) * 1000 + 300
+        const rList = rhythm ?? []
+        await audioEngine.playMelody(notes, rList, tempo, meter)
+        const duration = audioEngine.getRhythmTotalDuration(rList, tempo) * 1000 + 300
         // Curwen 手势动画：按旋律节奏逐个高亮
         const solfegeList = [...new Set(notes.map(n => NOTE_MAP[noteBase(n) as NoteName]?.solfege).filter(Boolean))] as Solfege[]
         const beatSec = 60 / tempo
         // 与 playMelody 一致：节奏型按时值展开，每个发声单元对齐一个音（三连音=一拍3音）
         const onsetBeats: number[] = []
         let cumBeat = 0
-        for (const r of rhythm) {
+        for (const r of rList) {
           for (const d of audioEngine.patternToDurationsPublic(r)) {
             if (r !== 'quarter-rest') onsetBeats.push(cumBeat)
             cumBeat += d
@@ -223,7 +231,7 @@ export default function Lesson() {
       }
     } else {
       await audioEngine.playAudioPattern(q.audio)
-      const duration = audioEngine.getRhythmTotalDuration(rhythm, tempo) * 1000 + 300
+      const duration = audioEngine.getRhythmTotalDuration(rhythm ?? [], tempo) * 1000 + 300
       setTimeout(() => setDemoPlaying(false), duration)
     }
   }
@@ -257,8 +265,12 @@ export default function Lesson() {
 
     // 播放老师示范旋律作为伴奏
     const q = lesson.dictationQuestions?.[0]
-    if (q?.audio?.notes && q.audio.notes.length > 0) {
-      audioEngine.playMelody(q.audio.notes, q.audio.rhythm, q.audio.tempo)
+    if (q?.audio?.chords && q.audio.chords.length > 0) {
+      audioEngine.playChordSequence(q.audio.chords, q.audio.tempo)
+    } else if (q?.audio?.parts && q.audio.parts.length > 0) {
+      audioEngine.playParts(q.audio.parts, q.audio.tempo)
+    } else if (q?.audio?.notes && q.audio.notes.length > 0) {
+      audioEngine.playMelody(q.audio.notes, q.audio.rhythm ?? [], q.audio.tempo, q.audio.meter)
     } else if (q?.audio) {
       audioEngine.playAudioPattern(q.audio)
     }
