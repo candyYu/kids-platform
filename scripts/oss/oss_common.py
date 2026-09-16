@@ -43,8 +43,12 @@ def _signed_request(method, key_with_subresource, data=None, content_type="", ex
     extra_headers = extra_headers or {}
 
     if key_with_subresource.startswith("?"):
+        # 子资源请求（如 ?cors）：
+        # URL 走虚拟主机风格（bucket 在 Host 里，URI 不能再带 bucket，否则服务端
+        # 会把 bucket 既当容器又当路径，签名字符串被算成 /bucket/bucket/?cors）；
+        # 但 CanonicalizedResource 签名串必须包含 bucket：/{bucket}/?cors。
         path = f"/{BUCKET}/{key_with_subresource}"
-        url = f"{ENDPOINT}/{BUCKET}/{key_with_subresource}"
+        url = f"{PUBLIC_BASE}/{key_with_subresource}"
         host = HOST
     else:
         path = f"/{BUCKET}/{key_with_subresource.lstrip('/')}"

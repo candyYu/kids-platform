@@ -107,7 +107,7 @@ def do_upload():
         with open(path, "rb") as f:
             data = f.read()
         key = f"star-cards/audio/{name}"
-        url = put_object(data, key, content_type="audio/mp4", cache_control="public, max-age=31536000, immutable")
+        url = put_object(key, data, content_type="audio/mp4", cache_control="public, max-age=31536000, immutable")
         ok, info = check_live(url)
         if not ok:
             sys.exit(f"验活失败 {url}：{info}")
@@ -126,7 +126,7 @@ def do_upload_pdf(announce=True):
     with open(pdf, "rb") as f:
         data = f.read()
     key = f"star-cards/{PDF_NAME}"
-    url = put_object(data, key, content_type="application/pdf", cache_control="public, max-age=86400")
+    url = put_object(key, data, content_type="application/pdf", cache_control="public, max-age=86400")
     ok, info = check_live(url)
     if not ok:
         sys.exit(f"PDF 验活失败 {url}：{info}")
