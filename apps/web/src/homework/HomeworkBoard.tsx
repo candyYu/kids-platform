@@ -1,9 +1,12 @@
 // 首页顶部「今日作业」板块：从 OSS 拉取家长发布的当天作业，孩子逐条打勾。
 // 打勾只存本机；语文条目挂摘星卡直达按钮（摘星卡页在 yuwen app）。
-import { useState } from 'react'
+// 全部完成：⭐×1 计入全平台星星，全屏彩纸庆祝（同一份作业当天只奖一次）。
+import { useMemo, useState } from 'react'
 import {
   useHomework, loadChecks, toggleCheck, entryCheckKey,
 } from './useHomework'
+import { claimHomeworkStar, isHomeworkStarClaimed } from './reward'
+import CelebrationOverlay from './CelebrationOverlay'
 import type { Subject } from './parser'
 
 const SUBJECT_META: Record<Subject, { emoji: string; bg: string }> = {
@@ -21,10 +24,11 @@ function starCardUrl(lesson: number): string {
     : `/yuwen/star-cards/${lesson}`
 }
 
-function Checkbox({ checked, onClick }: { checked: boolean; onClick: () => void }) {
+function Checkbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  // key 随 checked 变：每次新勾上都重播一次小弹跳
   return (
     <button
-      onClick={onClick}
+      onClick={onToggle}
       aria-label={checked ? '取消完成' : '标记完成'}
       className={`flex-none w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[3px] flex items-center justify-center text-xl font-bold transition-all active:scale-90 ${
         checked
@@ -32,15 +36,28 @@ function Checkbox({ checked, onClick }: { checked: boolean; onClick: () => void 
           : 'bg-white border-pig-200 text-transparent'
       }`}
     >
-      ✓
+      {checked && (
+        <span key="pop" className="hw-check-pop leading-none">✓</span>
+      )}
     </button>
   )
 }
 
-export default function HomeworkBoard() {
-  const { status, entries, orphans, errorMessage, reload } = useHomework()
+export default function HomeworkBoard({ showTitle = true }: { showTitle?: boolean }) {
+  const { status, entries, orphans, staleNote, fingerprint, reload } = useHomework()
   const [checksVersion, setChecksVersion] = useState(0)
+  const [celebrating, setCelebrating] = useState(false)
   void checksVersion
+
+  const checks = loadChecks()
+  const allKeys = useMemo(
+    () => entries.flatMap((e) => e.lines.map((l) => entryCheckKey(e.subject, l))),
+    [entries],
+  )
+  const doneCount = allKeys.filter((k) => checks[k]).length
+  const total = allKeys.length
+  const allDone = total > 0 && doneCount === total
+  const starClaimed = fingerprint ? isHomeworkStarClaimed(fingerprint) : true
 
   if (status === 'loading') {
     return (
@@ -70,38 +87,74 @@ export default function HomeworkBoard() {
     )
   }
 
-  const checks = loadChecks()
-  const allKeys = entries.flatMap((e) => e.lines.map((l) => entryCheckKey(e.subject, l)))
-  const doneCount = allKeys.filter((k) => checks[k]).length
-
   const onToggle = (key: string) => {
-    toggleCheck(key, !checks[key])
+    const willCheck = !checks[key]
+    toggleCheck(key, willCheck)
     setChecksVersion((v) => v + 1)
+
+    if (willCheck) {
+      // 直接从 localStorage 读最新勾选数（防快速连点时 state 还没刷新漏发奖）；
+      // 这一勾之后全部完成，且这份作业今天还没领过星 → 发奖 + 庆祝
+      const latest = loadChecks()
+      const nextDone = allKeys.filter((k) => latest[k]).length
+      if (nextDone === total && !isHomeworkStarClaimed(fingerprint)) {
+        const gained = claimHomeworkStar(fingerprint)
+        if (gained > 0) setCelebrating(true)
+      }
+    }
   }
+
+  const progressPct = total ? Math.round((doneCount / total) * 100) : 0
 
   return (
     <section className="w-full max-w-2xl mx-auto mb-5">
-      <div className="flex items-center justify-between mb-2 px-1">
-        <h2 className="text-lg sm:text-xl font-bold text-pig-700">📋 今天的作业</h2>
-        <span className="text-xs sm:text-sm font-bold text-pig-500 bg-white/80 px-2.5 py-1 rounded-full border border-pig-100">
-          完成 {doneCount}/{allKeys.length}
+      <div className={`flex items-center justify-between mb-2 ${showTitle ? 'px-1' : ''}`}>
+        {showTitle && <h2 className="text-lg sm:text-xl font-bold text-pig-700">📋 今天的作业</h2>}
+        {!showTitle && <span className="flex-1" />}
+        <span className={`inline-flex items-center gap-1 text-xs sm:text-sm font-bold px-2.5 py-1 rounded-full border ${
+          allDone
+            ? 'text-grass-700 bg-grass-50 border-grass-200'
+            : 'text-pig-500 bg-white/80 border-pig-100'
+        }`}>
+          {allDone
+            ? (starClaimed ? '🎉 全部完成 · ⭐已收下' : '🎉 全部完成')
+            : `完成 ${doneCount}/${total}`}
         </span>
       </div>
+
+      {/* 总进度条 */}
+      <div className="h-3 bg-white/80 rounded-full border border-pig-100 overflow-hidden mb-3 shadow-inner">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-sun-300 via-pig-400 to-pig-500 transition-[width] duration-500 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      {staleNote && (
+        <p className="text-[11px] text-chili-500/80 mb-2 px-1">⚠️ {staleNote}</p>
+      )}
 
       <div className="space-y-3">
         {entries.map((entry) => {
           const meta = SUBJECT_META[entry.subject]
-          const subjectDone = entry.lines.every((l) => checks[entryCheckKey(entry.subject, l)])
+          const keys = entry.lines.map((l) => entryCheckKey(entry.subject, l))
+          const subDone = keys.filter((k) => checks[k]).length
+          const subjectDone = subDone === keys.length
           return (
             <div
               key={entry.subject}
-              className={`rounded-bubble shadow-card border-2 p-3 sm:p-4 ${meta.bg} ${
+              className={`rounded-bubble shadow-card border-2 p-3 sm:p-4 transition-opacity duration-500 ${meta.bg} ${
                 subjectDone ? 'opacity-60' : ''
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">{meta.emoji}</span>
                 <span className="font-bold text-ink-700">{entry.subject}</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  subjectDone ? 'bg-grass-100 text-grass-700' : 'bg-white/70 text-ink-400'
+                }`}>
+                  {subjectDone ? '✓ 完成' : `${subDone}/${keys.length}`}
+                </span>
                 {entry.starCardLesson != null && (
                   <a
                     href={starCardUrl(entry.starCardLesson)}
@@ -117,9 +170,9 @@ export default function HomeworkBoard() {
                   const checked = !!checks[key]
                   return (
                     <li key={key} className="flex items-center gap-3">
-                      <Checkbox checked={checked} onClick={() => onToggle(key)} />
+                      <Checkbox checked={checked} onToggle={() => onToggle(key)} />
                       <span
-                        className={`text-sm sm:text-base leading-snug ${
+                        className={`text-sm sm:text-base leading-snug transition-all ${
                           checked ? 'line-through text-ink-400' : 'text-ink-700'
                         }`}
                       >
@@ -139,6 +192,8 @@ export default function HomeworkBoard() {
           作业文件有 {orphans} 行没写学科，告诉妈妈检查一下～
         </p>
       )}
+
+      {celebrating && <CelebrationOverlay onClose={() => setCelebrating(false)} />}
     </section>
   )
 }

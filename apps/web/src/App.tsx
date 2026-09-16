@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Home from './pages/Home'
 import RewardsPage from './pages/RewardsPage'
+import HomeworkPage from './pages/HomeworkPage'
 import { isUnlocked, setUnlocked } from './auth/gate'
 
 // 密码页：6 位数字密码，存 localStorage（7 天有效）+ sessionStorage（当前标签页）
@@ -23,8 +24,9 @@ export default function App() {
   void hashTick
 
   if (unlocked) {
-    // hash 路由：#/rewards → 奖励页；其余 → 首页（无需 react-router，GitHub Pages 零配置）
+    // hash 路由：#/rewards → 奖励页；#/homework → 今日作业；其余 → 首页
     if (window.location.hash === '#/rewards') return <RewardsPage />
+    if (window.location.hash === '#/homework') return <HomeworkPage />
     return <Home />
   }
 

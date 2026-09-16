@@ -4,8 +4,10 @@
 // 自适应布局：
 //   < 640px：2×2 网格（手机）
 //   >= 640px：2×2 网格略大（平板 / 电脑）
+import { useEffect, useState } from 'react'
 import { getStars, getStreak } from '@kids/core'
-import HomeworkBoard from '../homework/HomeworkBoard'
+import HomeworkEntry from '../homework/HomeworkEntry'
+import { STARS_CHANGED_EVENT } from '../homework/reward'
 
 interface CardProps {
   href?: string  // 无 href = 敬请期待占位（不可点）
@@ -38,6 +40,22 @@ export default function Home() {
   const mathHref = isDev ? 'http://127.0.0.1:5176' : '/math'
   const englishHref = isDev ? 'http://127.0.0.1:5178' : '/english'
 
+  // 星星数：作业领奖后即时 +1，不用刷新页面
+  const [stars, setStars] = useState(() => getStars())
+  const [streak, setStreak] = useState(() => getStreak().current)
+  useEffect(() => {
+    const refresh = () => {
+      setStars(getStars())
+      setStreak(getStreak().current)
+    }
+    window.addEventListener(STARS_CHANGED_EVENT, refresh)
+    window.addEventListener('storage', refresh) // 其他 app/标签页变化时同步
+    return () => {
+      window.removeEventListener(STARS_CHANGED_EVENT, refresh)
+      window.removeEventListener('storage', refresh)
+    }
+  }, [])
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream-50 to-pig-50 p-4 sm:p-6 flex flex-col">
       <header className="text-center mb-6 sm:mb-8 mt-2 sm:mt-4">
@@ -46,17 +64,17 @@ export default function Home() {
         <p className="text-sm sm:text-base text-pig-500 mt-1">想学什么呀？</p>
       </header>
 
-      {/* 今日作业：家长在电脑上发布到 OSS，孩子打开首页第一眼看到 */}
-      <HomeworkBoard />
+      {/* 今日作业入口：点进独立页才展开完整作业板，pad 首页保持一屏不滚 */}
+      <HomeworkEntry />
 
       {/* 平台激励条：全平台共享的星星 / 连续天数 / 奖励兑换（@kids/core，同域 localStorage） */}
       <div className="flex justify-center gap-2 mb-6">
         <a href="#/rewards" className="inline-flex items-center gap-1.5 bg-white/80 border-2 border-sun-200 px-4 py-2 rounded-full text-sm font-bold text-sun-700 shadow-card active:scale-95">
-          ⭐ {getStars()}
+          ⭐ {stars}
         </a>
-        {getStreak().current > 0 && (
+        {streak > 0 && (
           <span className="inline-flex items-center gap-1 bg-white/80 border-2 border-chili-500/30 px-4 py-2 rounded-full text-sm font-bold text-chili-600 shadow-card">
-            🔥 {getStreak().current} 天
+            🔥 {streak} 天
           </span>
         )}
         <a href="#/rewards" className="inline-flex items-center gap-1 bg-gradient-to-r from-pig-400 to-pig-500 px-4 py-2 rounded-full text-sm font-bold text-white shadow-card active:scale-95">
