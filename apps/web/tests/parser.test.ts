@@ -1,8 +1,8 @@
 // node --test 原生测试（Node >=22，无需 vitest）。
-// 运行：node --experimental-strip-types --test apps/web/src/homework/parser.test.ts
+// 运行：node --experimental-strip-types --test apps/web/tests/parser.test.ts
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseHomework } from './parser.ts'
+import { parseHomework } from '../src/homework/parser.ts'
 
 test('学科独占一行 + 多条编号内容归属该学科', () => {
   const text = `语文
