@@ -7,3 +7,5 @@ dist/
 .venv/
 coverage/
 .tsbuildinfo
+
+__pycache__/
