@@ -23,6 +23,16 @@ export default defineConfig(({ command }) => ({
     host: '127.0.0.1',
     strictPort: true,
     open: false,
+    // 与 web 同款：OSS bucket Referer 防盗链只放行 candyYu.github.io，
+    // dev 页面来自 127.0.0.1 直连会 403，走同源代理改写 Referer。
+    proxy: {
+      '/oss-proxy': {
+        target: 'https://kids-platform.oss-cn-hangzhou.aliyuncs.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/oss-proxy/, ''),
+        headers: { Referer: 'https://candyYu.github.io/' },
+      },
+    },
   },
   base: '/yuwen/',
   test: {

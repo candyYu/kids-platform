@@ -17,6 +17,7 @@ import sys
 from email.utils import formatdate
 from urllib import request as urlrequest
 from urllib.error import HTTPError
+from urllib.parse import quote
 
 BUCKET = os.environ.get("OSS_BUCKET", "kids-platform")
 ENDPOINT = os.environ.get("OSS_ENDPOINT", "https://oss-cn-hangzhou.aliyuncs.com").rstrip("/")
@@ -54,8 +55,11 @@ def _signed_request(method, key_with_subresource, data=None, content_type="", ex
         url = f"{PUBLIC_BASE}/{key_with_subresource}"
         host = HOST
     else:
-        path = f"/{BUCKET}/{key_with_subresource.lstrip('/')}"
-        url = f"{PUBLIC_BASE}/{key_with_subresource.lstrip('/')}"
+        key = key_with_subresource.lstrip('/')
+        # 签名用未编码的 UTF-8 路径；HTTP 请求行只允许 ASCII，需 percent-encode
+        # （保留 / 不编码）。OSS 解码后与签名路径一致。
+        path = f"/{BUCKET}/{key}"
+        url = f"{PUBLIC_BASE}/{quote(key, safe='/')}"
         host = HOST
 
     date = formatdate(usegmt=True)
@@ -107,6 +111,10 @@ def get_raw(url: str, referer: str | None = VERIFY_REFERER, byte_range: str | No
         headers["Referer"] = referer
     if byte_range:
         headers["Range"] = byte_range
+    # 中文路径需 percent-encode（请求行只允许 ASCII），保留 scheme/host/query
+    parts = url.split("/", 3)
+    if len(parts) == 4:
+        url = "/".join(parts[:3]) + "/" + quote(parts[3], safe="/?=&%")
     req = urlrequest.Request(url, headers=headers)
     try:
         with urlrequest.urlopen(req, timeout=30) as resp:

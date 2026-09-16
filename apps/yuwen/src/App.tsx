@@ -9,6 +9,8 @@ import ParentDashboardPage from './routes/ParentDashboardPage'
 import SettingsPage from './routes/SettingsPage'
 import CheatSheetPage from './routes/CheatSheetPage'
 import TeacherPage from './routes/TeacherPage'
+import StarCardsPage from './routes/starCards/StarCardsPage'
+import StarCardPage from './routes/starCards/StarCardPage'
 import PoemList from './components/poem/PoemList'
 import PoemReader from './components/poem/PoemReader'
 import StoryList from './components/storybook/StoryList'
@@ -36,6 +38,8 @@ export default function App() {
       <Route path="/parent" element={<ParentDashboardPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cheatsheet" element={<CheatSheetPage />} />
+      <Route path="/star-cards" element={<StarCardsPage />} />
+      <Route path="/star-cards/:lessonParam" element={<StarCardPage />} />
       <Route path="/teacher" element={<TeacherPage />} />
       <Route path="/poem" element={<PoemList />} />
       <Route path="/poem/:id" element={<PoemReader />} />
