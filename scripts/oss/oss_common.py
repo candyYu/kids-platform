@@ -22,6 +22,9 @@ BUCKET = os.environ.get("OSS_BUCKET", "kids-platform")
 ENDPOINT = os.environ.get("OSS_ENDPOINT", "https://oss-cn-hangzhou.aliyuncs.com").rstrip("/")
 HOST = f"{BUCKET}.{ENDPOINT.replace('https://', '').replace('http://', '')}"
 PUBLIC_BASE = f"https://{HOST}"
+# bucket 开了防盗链，匿名验活必须模拟真实站点请求带白名单 Referer，否则 403。
+# pad/浏览器从 candyYu.github.io 打开时本来就会自动带这个 Referer。
+VERIFY_REFERER = "https://candyYu.github.io/"
 
 
 def need_credentials():
@@ -96,8 +99,9 @@ def put_object(key, data, content_type: str, cache_control: str | None = None):
     return f"{PUBLIC_BASE}/{key}"
 
 
-def get_raw(url: str, referer: str | None = None, byte_range: str | None = None):
-    """匿名 GET（用于上传后验证）。byte_range='bytes=0-0' 只取 1 字节（音频验活省流量）。"""
+def get_raw(url: str, referer: str | None = VERIFY_REFERER, byte_range: str | None = None):
+    """匿名 GET（上传后验活用）。默认带白名单 Referer（防盗链要求）；
+    传 referer='' 可测空 Referer，byte_range='bytes=0-0' 只取 1 字节省流量。"""
     headers = {}
     if referer:
         headers["Referer"] = referer
